@@ -136,7 +136,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         }
 
         function add_category_filter() {
-
+            //Requires class-walker-category-filter.php
         }
 
         function bulk_admin_footer() {
@@ -179,4 +179,10 @@ if( class_exists( 'CoolMediaFilter') ) {
     $coolMediaFilter->register();
 }
 
-require_once plugin_dir_path(__FILE__) . 'actions/actions.php';
+require_once plugin_dir_path(__FILE__) . 'inc/plugin-actions.php';
+
+//activate
+register_activation_hook( __FILE__, array( 'PluginAction', 'activate' ) );
+
+//deactivate
+register_deactivation_hook( __FILE__, array( 'PluginAction', 'deactivate' ) );
