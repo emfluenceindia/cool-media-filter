@@ -45,6 +45,28 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         function register()
         {
             add_action( 'init', array( $this, 'register_taxonomy' ) );
+            add_action( 'init', array( $this, 'change_default_update_count_callback' ), 100 );
+
+            add_filter( 'shortcode_atts_gallery', array( $this, 'register_gallery_shortcode' ) );
+
+            if( is_admin() ) {
+                add_action( 'add_attachment', array( $this, 'set_attachment_category' ) );
+                add_action( 'edit_attachment', array( $this, 'set_attachment_category' ) );
+
+                add_action( 'restrict_manage_posts', array( $this, 'add_category_filter' ) );
+                add_action( 'admin_footer-upload.php', array( $this, 'bulk_admin_footer' ) );
+                add_action( 'load-upload.php', array( $this, 'bulk_admin_action' ) );
+                add_action( 'admin_notices', array( $this, 'bulk_admin_notice' ) );
+                add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
+                add_action( 'ajax_query_attachments_args', array( $this, 'ajax_query_attachment_args' ) );
+                add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
+                add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment', 0 ) );
+                add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
+            }
+        }
+
+        function register_gallery_shortcode() {
+            require_once plugin_dir_path() . 'inc/gallery-shortcode.php';
         }
 
         function register_taxonomy() {
@@ -56,14 +78,14 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 $args = array(
                     'hierarchical'  => true,
                     'show_admin_column' => true,
-                    'update_count_callback' => 'update_category_count',
+                    'update_count_callback' => 'update_count',
                 );
 
                 register_taxonomy( $this->taxonomy, array( $this->post_type ), $args );
             }
         }
 
-        function update_category_count() {
+        function update_count() {
             global $wpdb;
 
             //$this->taxonomy = apply_filters(  'cool_media_taxonomy', $this->taxonomy );
@@ -93,6 +115,62 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 $wpdb->update( $wpdb->term_taxonomy, array( 'count' => $rowCount->total), array( 'term_taxonomy_id' => $rowCount->term_taxonomy_id ) );
             }
         }
+
+        function change_default_update_count_callback() {
+            global $wp_taxonomies;
+
+            if( $this->taxonomy === 'category' ) {
+                if( !taxonomy_exists( $this->taxonomy ) )
+                    return;
+            }
+
+            $callback_arg = &$wp_taxonomies['category']->update_count_callback;
+
+            $callback_arg = 'update_count';
+        }
+
+        //If admin...
+
+        function set_attachment_category( $post_id ) {
+
+        }
+
+        function add_category_filter() {
+
+        }
+
+        function bulk_admin_footer() {
+
+        }
+
+        function bulk_admin_action() {
+
+        }
+
+        function bulk_admin_notice() {
+
+        }
+
+        function action_links( $links ) {
+
+        }
+
+        function ajax_query_attachment_args( $query = array() ) {
+
+        }
+
+        function enqueue_media_action() {
+
+        }
+
+        function save_attachment() {
+
+        }
+
+        function attachment_editable_fields( $form_fields, $post ) {
+
+        }
+
     }
 }
 
