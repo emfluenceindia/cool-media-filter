@@ -32,12 +32,14 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         public $plugin;
         public $taxonomy;
         public $post_type;
+        public $text_domain;
 
         function __construct()
         {
             $this->plugin = plugin_basename( __FILE__ );
             $this->taxonomy = 'category';
             $this->post_type = 'attachment';
+            $this->text_domain = 'cool-media-filter';
 
             $this->taxonomy = apply_filters( 'cool_media_taxonomy', $this->taxonomy );
         }
@@ -57,8 +59,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 add_action( 'admin_footer-upload.php', array( $this, 'bulk_admin_footer' ) );
                 add_action( 'load-upload.php', array( $this, 'bulk_admin_action' ) );
                 add_action( 'admin_notices', array( $this, 'bulk_admin_notice' ) );
-                add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
-                add_action( 'ajax_query_attachments_args', array( $this, 'ajax_query_attachment_args' ) );
+                //add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
+                add_action( 'ajax_query_attachments_args', array( $this, 'ajax_attachment_query_builder' ) );
                 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
                 add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment', 0 ) );
                 add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
@@ -129,46 +131,306 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $callback_arg = 'update_count';
         }
 
-        //If admin...
+        //if_admin()... (all functions below this point will be executed if and only if we are inside admin)
 
-        function set_attachment_category( $post_id ) {
+        function set_attachment_category( $post_ID ) {
 
+            //Attachment already has category.
+            if( wp_get_object_terms( $post_ID, $this->taxonomy ) )
+                return;
+
+            //Get the default one
+            $post_category = array( get_option( 'default_category' ) );
+
+            //Set category
+            if( $post_category ) {
+                wp_set_post_categories( $post_ID, $post_category );
+            }
         }
 
         function add_category_filter() {
-            //Requires class-walker-category-filter.php
+            global $pagenow;
+
+            if( 'upload.php' === $pagenow ) {
+
+                if ($this->taxonomy !== 'category') {
+                    $options = array(
+                        'taxonomy' => $this->taxonomy,
+                        'name' => $this->taxonomy,
+                        'show_options_all' => __('All categories', $this->text_domain),
+                        'hide_empty' => false,
+                        'hierarchical' => true,
+                        'orderby' => 'name',
+                        'show_count' => true,
+                        'walker' => new WalkerCategoryFilter(),
+                        'value' => 'slug',
+                    );
+                } else {
+                    $options = array(
+                        'taxonomy' => $this->taxonomy,
+                        'show_options_all' => __('All categories', $this->text_domain),
+                        'hide_empty' => false,
+                        'hierarchical' => true,
+                        'orderby' => 'name',
+                        'show_count' => true,
+                        'walker' => new WalkerCategoryFilter(),
+                        'value' => 'id',
+                    );
+                }
+
+                wp_dropdown_categories($options);
+            }
         }
 
         function bulk_admin_footer() {
+            $terms = get_terms( $this->taxonomy, 'hide_empty=0' );
 
+            if( $terms && !is_wp_error( $terms ) ) {
+                //Prepare terms here...
+                echo '<script type="text/javascript">';
+                echo 'jQuery(window).load( function() {';
+                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup1" label="' .  html_entity_decode( __( 'Categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup2" label="' .  html_entity_decode( __( 'Categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
+
+                /**
+                 * Categories under ADD group
+                 */
+                foreach( $terms as $term ) {
+                    $str_add_option_item = esc_js( __ ( 'Attach', $this->text_domain ) . ': ' . $term->name );
+
+                    echo "jQuery('<option>').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup1');";
+                    echo "jQuery('<option>').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup2');";
+                }
+
+
+                /**
+                 * Categories under REMOVE group
+                 */
+                foreach( $terms as $term ) {
+                    $str_remove_option_item = esc_js( __( 'Detach', $this->text_domain ) . ': ' . $term->name );
+
+                    echo "jQuery('<option>').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup1');";
+                    echo "jQuery('<option>').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup2');";
+                }
+
+
+                /**
+                 * Remove all categories
+                 */
+
+                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Detach all categories', $this->text_domain ) ) . "').appendTo('#wpmediacategory_optgroup1');";
+                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Detach all categories', $this->text_domain ) ) . "').appendTo('#wpmediacategory_optgroup2');";
+
+                echo '})'; // anonymous function definition ends
+
+                echo '</script>';
+            }
         }
 
         function bulk_admin_action() {
+            global $wpdb;
 
+            // REQUEST['action'] is not set stop execution
+            if( !isset( $_REQUEST['action'] ) ) {
+                return;
+            }
+
+            //Check if 'action' is a category. If not stop execution
+            $action = ( $_REQUEST['action'] !== -1 ) ? $_REQUEST['action'] : $_REQUEST['action2'];
+            if( substr( $action, 0, 16 ) !== 'coolmediafilter_' ) { //need to check the correct position.
+                return;
+            }
+
+            //Do a security check
+            check_admin_referer( 'bulk-media' );
+
+            //If Ids are not submitted stop execution.
+            if( isset( $_REQUEST['media'] ) ) {
+                $post_ids = array_map( 'intval', $_REQUEST['media'] );
+            }
+
+            if( empty( $post_ids ) ) {
+                return;
+            }
+
+            $safe_sendback_url = admin_url( "upload.php?editCategory=1" );
+
+            //Remember page number for safe redirect
+            //If no current page is set, default to 0
+            $current_page_number = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0;
+            $safe_sendback_url = add_query_arg( 'paged', $current_page_number, $safe_sendback_url );
+
+            //Remember orderby settings for using when redirected.
+            if( isset( $_REQUEST['orderby'] ) ) {
+                $current_orderby = $_REQUEST['orderby'];
+                $safe_sendback_url = esc_url( add_query_arg( 'orderby', $current_orderby, $safe_sendback_url ) );
+            }
+
+            //Remeber current order (ASC or DESC) settings for using when redirected.
+            if( isset( $_REQUEST['order'] ) ) {
+                $current_display_order = $_REQUEST['order'];
+                $safe_sendback_url = esc_url( add_query_arg( 'order', $current_display_order, $safe_sendback_url ) );
+            }
+
+            //Remember author
+            if( isset( $_REQUEST['author'] ) ) {
+                $current_author = $_REQUEST['author'];
+                $safe_sendback_url = esc_url( add_query_arg( 'author', $current_author, $safe_sendback_url ) );
+            }
+
+            //Start CRUD functionality
+
+            foreach( $post_ids as $post_id ) {
+                if( is_numeric( str_replace( 'coolmediafilter_add_', '', $action ) ) ) {
+                    $category_id = str_replace( 'coolmediafilter_add_', '', $action );
+
+                    //Run Insert or Update category routine
+                    $wpdb->replace( $wpdb->term_relationships,
+                        array(
+                            'object_id'         => $post_id,
+                            'term_taxonomy_id'  => $category_id,
+                        ),
+                        array(
+                            '%d',
+                            '%d'
+                        )
+                    );
+                }
+                elseif( is_numeric( str_replace( 'coolmediafilter_remove_', '', $action ) ) ) {
+                    $category_id = str_replace( 'coolmediafilter_remove_', '', $action );
+
+                    if( $category_id === 0 ) {
+                        //Remove all category associations from all selected media
+                        $wpdb->delete( $wpdb->term_relationships,
+                            array(
+                                'object_id' => 0
+                            ),
+                            array(
+                                '%d'
+                            )
+                        );
+                    } else {
+                        //Remove selected category from selected media
+                        $wpdb->delete( $wpdb->term_relationships,
+                            array(
+                                'object_id'         => $post_id,
+                                'term_taxonomy_id'   => $category_id
+                            ),
+                            array(
+                                '%d',
+                                '%d'
+                            )
+                        );
+                    }
+                }
+            }
+
+            $this->update_count();
+            wp_safe_redirect( $safe_sendback_url );
+            exit();
         }
 
+        /** Display update message after category edit */
         function bulk_admin_notice() {
+            global $pagenow, $post_type;
 
+            if( $pagenow === 'upload.php' && $post_type == 'attachment' && isset( $_GET['editCategory'] ) ) {
+                echo '<div class="updated"><p>' . __('All changes are saved', $this->text_domain) . '</p></div>';
+            }
         }
 
         function action_links( $links ) {
-
+            //To be implemented
         }
 
-        function ajax_query_attachment_args( $query = array() ) {
+        /**
+         * @param array $query
+         * @return array $query
+         * Changing categories in gridview
+         * Gets the original query via $query argument
+         * We find intersecting keys in $query array and a taxonomy query
+         * Then merge the those keys into main $query array
+         */
+        function ajax_attachment_query_builder( $query = array() ) {
+            //We grab the original query which is already filtered by WordPress
+            $tax_query = isset( $_REQUEST['query'] ) ? (array)$_REQUEST['query'] : array();
+            
+            //Get the taxonomies for attachments by names
+            $att_taxonomies = get_object_taxonomies( 'attachment', 'names' );
 
+            $tax_query = array_intersect_key( $tax_query, array_flip( $att_taxonomies ) );
+
+            //Merge $tax_query into actual filtered WordPress query
+            array_merge( $query, $tax_query );
+
+            $query['tax_query'] = array( 'relation' => 'AND' );
+
+            foreach( $att_taxonomies as $att_taxonomy ) {
+                if( isset( $query[$att_taxonomy] ) && is_numeric( $query[$att_taxonomy] ) ) {
+                    array_push( $query['tax_query'], array(
+                            'taxonomy'  => $att_taxonomy,
+                            'field'     => 'id',
+                            'terms'     => $query[$att_taxonomy],
+                        )
+                    );
+                }
+
+                unset( $query[$att_taxonomy] );
+            }
+
+            return $query;
         }
 
         function enqueue_media_action() {
+            global $pagenow;
 
+            if( wp_script_is( 'media-editor' ) && 'upload.php' === $pagenow ) {
+                if( $this->taxonomy !== 'category' ) {
+                    $options = array(
+                        'taxonomy'      => $this->taxonomy,
+                        'hierarchical'  => true,
+                        'hide_empty'    => false,
+                        'show_count'    => true,
+                        'orderby'       => 'name',
+                        'value'         => 'id',
+                        'echo'          => false,
+                        'walker'        => new WalkerCategoryMediaGridFilter(),
+
+                    );
+                } else {
+                    $options = array(
+                        'taxonomy'      => $this->taxonomy,
+                        'hierarchical'  => true,
+                        'hide_empty'    => false,
+                        'show_count'    => false,
+                        'orderby'       => 'name',
+                        'value'         => 'id',
+                        'echo'          => false,
+                        'walker'        => new WalkerCategoryMediaGridFilter(),
+                    );
+                }
+
+                $attachment_terms = wp_dropdown_categories( $options );
+                $attachment_terms = preg_replace( array( "/<select([^>]*)>/", "/<\/select>/" ), "", $attachment_terms );
+
+                echo '<script type="text/javascript">';
+                echo '/* <![CDATA[ */';
+                echo 'var wpmediacategory_taxonomies = {"' . $this->taxonomy . '":{"list_title":"' . html_entity_decode( __( 'All categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '","term_list":[' . substr( $attachment_terms, 2 ) . ']}};';
+                echo '/* ]]> */';
+                echo '</script>';
+
+                wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+            }
+
+            wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.0' );
         }
 
         function save_attachment() {
-
+            //To be implemented
         }
 
         function attachment_editable_fields( $form_fields, $post ) {
-
+            //To be implemented
         }
 
     }
