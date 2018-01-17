@@ -149,6 +149,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         }
 
         function add_category_filter() {
+            require_once plugin_dir_path( __FILE__ ) . 'classes/class-walker-category-filter.php';
+
             global $pagenow;
 
             if( 'upload.php' === $pagenow ) {
@@ -382,6 +384,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         }
 
         function enqueue_media_action() {
+            require_once plugin_dir_path( __FILE__ ) . 'classes/class-walker-category-mediagrid-filter.php';
+
             global $pagenow;
 
             if( wp_script_is( 'media-editor' ) && 'upload.php' === $pagenow ) {
@@ -415,7 +419,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
                 echo '<script type="text/javascript">';
                 echo '/* <![CDATA[ */';
-                echo 'var wpmediacategory_taxonomies = {"' . $this->taxonomy . '":{"list_title":"' . html_entity_decode( __( 'All categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '","term_list":[' . substr( $attachment_terms, 2 ) . ']}};';
+                echo 'var coolmediafilter_taxonomies = {"' . $this->taxonomy . '":{"list_title":"' . html_entity_decode( __( 'All categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '","term_list":[' . substr( $attachment_terms, 2 ) . ']}};';
                 echo '/* ]]> */';
                 echo '</script>';
 
@@ -425,12 +429,127 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.0' );
         }
 
+        /**
+         * Save categories from attachment details page
+         * Error handling:
+         * 1. if REQUEST['id'] is not set
+         * 2. if REQUEST['id'] is not an integer
+         * 3. if REQUEST['attachment'] or REQUEST['attachment'][id] is empty
+         * 4. if current user cannot edit current post
+         * 5. if post type of current post is not 'attachment'
+         */
+
         function save_attachment() {
-            //To be implemented
+            if( !isset($_REQUEST['id']) ) {
+                wp_send_json_error();
+            }
+
+            $id = $_REQUEST['id'];
+            if( ! $id === absint( $_REQUEST['id'] ) ) {
+                wp_send_json_error();
+            }
+
+            if( empty( $_REQUEST['attachments'] ) || empty( $_REQUEST['attachments'][ $id ] ) ) {
+                wp_send_json_error();
+            }
+
+            $attachment_data = $_REQUEST['attachments'][ $id ];
+
+            check_ajax_referer( 'update_post_' . $id, 'nonce' );
+
+            if ( !current_user_can( 'edit_post', $id ) ) {
+                wp_send_json_error();
+            }
+
+            $post = get_post( $id, ARRAY_A );
+
+            if( 'attachment' !== $post['post_type'] ) {
+                wp_send_json_error();
+            }
+
+            //https://codex.wordpress.org/Plugin_API/Filter_Reference/attachment_fields_to_save
+            $post = apply_filters( 'attachment_fields_to_save',  $post, $attachment_data );
+
+            if( isset( $_POST['errors'] ) ) {
+                $errors = $_POST['errors'];
+                unset ( $_POST['errors'] );
+            }
+
+            wp_update_post( $post );
+
+            foreach( get_attachment_taxonomies( $post ) as $obj_taxonomy ) {
+                if( isset( $attachment_data[ $obj_taxonomy ] ) ) {
+                    wp_set_object_terms( $id, array_map( 'trim', preg_split( '/,+/', $attachment_data[ $obj_taxonomy ] ) ), $obj_taxonomy, false );
+                } else if( isset($_REQUEST['tax_input']) && isset( $_REQUEST['tax_input'][ $obj_taxonomy ] ) ) {
+                    wp_set_object_terms( $id, $_REQUEST['tax_input'][ $obj_taxonomy ], $obj_taxonomy, false );
+                } else {
+                    wp_set_object_terms( $id, '', $obj_taxonomy, false );
+                }
+            }
+
+            if ( ! $attachment = wp_prepare_attachment_for_js( $id ) ) {
+                wp_send_json_error();
+            }
+
+            wp_send_json_success( $attachment );
+
         }
 
+        /**
+         * @param $form_fields
+         * @param $post
+         * @return mixed
+         */
         function attachment_editable_fields( $form_fields, $post ) {
-            //To be implemented
+
+            foreach ( get_attachment_taxonomies( $post->ID ) as $obj_taxonomy ) {
+                $terms = get_object_term_cache( $post->ID, $obj_taxonomy );
+
+                $t = (array)get_taxonomy( $obj_taxonomy );
+                if ( ! $t['public'] || ! $t['show_ui'] ) {
+                    continue;
+                }
+                if ( empty($t['label']) ) {
+                    $t['label'] = $obj_taxonomy;
+                }
+                if ( empty($t['args']) ) {
+                    $t['args'] = array();
+                }
+
+                if ( false === $terms ) {
+                    $terms = wp_get_object_terms($post->ID, $obj_taxonomy, $t['args']);
+                }
+
+                $values = array();
+
+                foreach ( $terms as $term ) {
+                    $values[] = $term->slug;
+                }
+
+                $t['value'] = join(', ', $values);
+                $t['show_in_edit'] = false;
+
+                if ( $t['hierarchical'] ) {
+                    ob_start();
+
+                    wp_terms_checklist( $post->ID, array( 'taxonomy' => $obj_taxonomy, 'checked_ontop' => false, 'walker' => new WalkerMediaTaxonomyCheckList() ) );
+
+                    if ( ob_get_contents() != false ) {
+                        $html = '<ul class="term-list">' . ob_get_contents() . '</ul>';
+                    } else {
+                        $html = '<ul class="term-list"><li>No ' . $t['label'] . '</li></ul>';
+                    }
+
+                    ob_end_clean();
+
+                    $t['input'] = 'html';
+                    $t['html'] = $html;
+                }
+
+                $form_fields[ $obj_taxonomy ] = $t;
+            }
+
+            return $form_fields;
         }
 
     }
