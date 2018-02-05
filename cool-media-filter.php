@@ -159,7 +159,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                     $options = array(
                         'taxonomy' => $this->taxonomy,
                         'name' => $this->taxonomy,
-                        'show_options_all' => __('All categories', $this->text_domain),
+                        'show_option_all' => __('All categories', $this->text_domain),
                         'hide_empty' => false,
                         'hierarchical' => true,
                         'orderby' => 'name',
@@ -170,7 +170,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 } else {
                     $options = array(
                         'taxonomy' => $this->taxonomy,
-                        'show_options_all' => __('All categories', $this->text_domain),
+                        'show_option_all' => __('All categories', $this->text_domain),
                         'hide_empty' => false,
                         'hierarchical' => true,
                         'orderby' => 'name',
@@ -191,37 +191,44 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 //Prepare terms here...
                 echo '<script type="text/javascript">';
                 echo 'jQuery(window).load( function() {';
-                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup1" label="' .  html_entity_decode( __( 'Categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
-                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup2" label="' .  html_entity_decode( __( 'Categories', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
+
+                echo 'jQuery(\'<optgroup style="color: #336600;" id="coolmediafilter_optgroup1" label="' .  html_entity_decode( __( 'Attach category &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+                echo 'jQuery(\'<optgroup style="color: #336600;" id="coolmediafilter_optgroup2" label="' .  html_entity_decode( __( 'Attach category &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
 
                 /**
                  * Categories under ADD group
                  */
                 foreach( $terms as $term ) {
-                    $str_add_option_item = esc_js( __ ( 'Attach', $this->text_domain ) . ': ' . $term->name );
+                    $str_add_option_item = esc_js( __ ( '', $this->text_domain ) . $term->name );
 
-                    echo "jQuery('<option>').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup1');";
-                    echo "jQuery('<option>').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup2');";
+                    echo "jQuery('<option style=\"color: #000000;\">').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup1');";
+                    echo "jQuery('<option style=\"color: #000000;\">').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup2');";
                 }
+
+                echo 'jQuery(\'<optgroup style="color: #ff0000;" id="coolmediafilter_optgroup3" label="' .  html_entity_decode( __( 'Detach category &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+                echo 'jQuery(\'<optgroup style="color: #ff0000;" id="coolmediafilter_optgroup4" label="' .  html_entity_decode( __( 'Detach category &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
 
 
                 /**
                  * Categories under REMOVE group
                  */
                 foreach( $terms as $term ) {
-                    $str_remove_option_item = esc_js( __( 'Detach', $this->text_domain ) . ': ' . $term->name );
+                    $str_remove_option_item = esc_js( __( '', $this->text_domain ) . $term->name );
 
-                    echo "jQuery('<option>').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup1');";
-                    echo "jQuery('<option>').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup2');";
+                    echo "jQuery('<option style=\"color: #000000;\">').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup3');";
+                    echo "jQuery('<option style=\"color: #000000;\">').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup4');";
                 }
+
+                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup5" label="' .  html_entity_decode( __( 'Bulk Action &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup6" label="' .  html_entity_decode( __( 'Bulk Action &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
 
 
                 /**
                  * Remove all categories
                  */
 
-                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Detach all categories', $this->text_domain ) ) . "').appendTo('#wpmediacategory_optgroup1');";
-                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Detach all categories', $this->text_domain ) ) . "').appendTo('#wpmediacategory_optgroup2');";
+                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Remove all categories', $this->text_domain ) ) . "').appendTo('#coolmediafilter_optgroup5');";
+                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Remove all categories', $this->text_domain ) ) . "').appendTo('#coolmediafilter_optgroup6');";
 
                 echo '})'; // anonymous function definition ends
 
@@ -301,11 +308,11 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 elseif( is_numeric( str_replace( 'coolmediafilter_remove_', '', $action ) ) ) {
                     $category_id = str_replace( 'coolmediafilter_remove_', '', $action );
 
-                    if( $category_id === 0 ) {
+                    if( $category_id == 0 ) {
                         //Remove all category associations from all selected media
                         $wpdb->delete( $wpdb->term_relationships,
                             array(
-                                'object_id' => 0
+                                'object_id' => $post_id
                             ),
                             array(
                                 '%d'
