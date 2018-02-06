@@ -62,7 +62,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 //add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
                 add_action( 'ajax_query_attachments_args', array( $this, 'ajax_attachment_query_builder' ) );
                 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
-                add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment', 0 ) );
+                add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
                 add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
             }
         }
@@ -80,7 +80,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 $args = array(
                     'hierarchical'  => true,
                     'show_admin_column' => true,
-                    'update_count_callback' => 'update_count',
+                    'update_count_callback' => array( $this, 'update_count' ),
                 );
 
                 register_taxonomy( $this->taxonomy, array( $this->post_type ), $args );
@@ -128,7 +128,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
             $callback_arg = &$wp_taxonomies['category']->update_count_callback;
 
-            $callback_arg = 'update_count';
+            $callback_arg =  array( $this, 'update_count' );
         }
 
         //if_admin()... (all functions below this point will be executed if and only if we are inside admin)
