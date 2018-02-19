@@ -65,6 +65,10 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
                 add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
             }
+
+            add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
+            //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
+            add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
         }
 
         function register_gallery_shortcode() {
@@ -557,6 +561,146 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
 
             return $form_fields;
+        }
+
+        /**
+         *
+         */
+        function create_plugin_admin_menu() {
+            $page_title = 'Cool Media Filter';
+            $menu_title = 'Cool Media Filter';
+            $capability = 'manage_options';
+            $menu_slug = 'user-category-access';
+            $callback = array( $this, 'plugin_options_page' );
+            $menu_icon = 'dashicons-filter';
+            $position = 4;
+
+            add_menu_page(
+                $page_title,
+                $menu_title,
+                $capability,
+                $menu_slug,
+                $callback,
+                $menu_icon,
+                $position
+            );
+
+            add_submenu_page(
+                'user-category-access',
+                'Add New Role',
+                'Add New Role',
+                'manage_options',
+                'new-user-role',
+                array( $this, 'add_user_role_markup' ) );
+
+            add_submenu_page(
+                'user-category-access',
+                'Category Access',
+                'Category Access',
+                'manage_options',
+                'manage-category-access',
+                array( $this, 'restrict_category_access_by_role' ) );
+        }
+
+        /**
+         * Register options page
+         * Purpose: Display categories with ability to select user roles for accessing category items
+         */
+
+        function restrict_category_item_access_by_user_role() {
+            add_option( 'category_item_access_by_role', 'Category Access By Role' );
+            register_setting( 'category_item_access', 'category_item_access_by_role', 'category_access_callback' );
+        }
+
+        /**
+         * Create option page for settings
+         * Not required ?
+         */
+        function category_access_option_page() {
+            add_options_page( 'Category Access', 'Restrict access to category items', 'manage_options', 'user-category-access', array( $this, 'plugin_options_page' ) );
+        }
+
+        /**
+         *
+         */
+        function plugin_options_page() {
+            echo '<div class="wrap"><h1>Cool Media Filter</h1></div>';
+        }
+
+
+        /**
+         *
+         */
+        function add_user_role_markup() {
+            echo '<div class="wrap"><h1>Add New User Role</h1></div>';
+            $roles = $this->get_all_roles();
+            //var_dump( $roles );
+            foreach( $roles as $role ) {
+                echo '<p>' . $role[ 'name' ] . '</p>';
+            }
+        }
+
+
+        /**
+         * https://wordpress.stackexchange.com/questions/1482/restricting-users-to-view-only-media-library-items-they-have-uploaded
+         */
+        function restrict_category_access_by_role() { ?>
+            <div class="wrap"><h1>Media Access Restriction</h1>
+
+            <?php
+            $cats = $this->get_all_categories();
+            $roles = $this->get_all_roles();
+
+            foreach( $cats as $cat ) { ?>
+                <div style="width: 30%; margin: .5em .5em 0 0; padding: 1em; display: inline-block; background: #fdfdfd;">
+                    <h3 style="margin: 0 auto; font-weight: normal;">
+                        <input type="hidden" class="hidden_termid" value="<?php echo $cat->term_id; ?>" />
+                        <?php echo $cat->name; ?>
+                    </h3>
+                <?php foreach( $roles as $role ) { ?>
+                    <div style="margin: .5em 0;">
+                        <input type="checkbox" value="<?php echo $role[ 'name' ] ?>" />
+                        &nbsp; <?php echo $role[ 'name' ]; ?>
+                    </div>
+                <?php }
+
+                echo '</div>';
+            }
+
+            echo '</div>';
+        }
+
+        /**
+         * @param bool $editable_only
+         * @return mixed|void
+         */
+        function get_all_roles( $editable_only = true ) {
+            global $wp_roles;
+
+            $all_roles = $wp_roles->roles;
+
+            if( ! $editable_only )
+                return $all_roles;
+            else {
+                $editable_roles = apply_filters( 'editable_roles', $all_roles );
+                return $editable_roles;
+            }
+        }
+
+        /**
+         *
+         */
+        function get_all_categories() {
+            $args = array(
+                'taxonomy'      => 'category',
+                'hide_empty'    => false,
+                'orderby'       => 'name',
+                'order'         => 'ASC',
+            );
+
+            $cats = get_categories( $args );
+
+            return $cats;
         }
 
     }
