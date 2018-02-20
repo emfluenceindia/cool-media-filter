@@ -69,6 +69,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
             //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
+            add_action( 'admin_post', array( $this, 'save_user_role' ) );
         }
 
         function register_gallery_shortcode() {
@@ -152,12 +153,17 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
         }
 
-        function add_category_filter() {
+        function add_category_filter( ) {
             require_once plugin_dir_path( __FILE__ ) . 'classes/class-walker-category-filter.php';
 
             global $pagenow;
+            $user = wp_get_current_user();
 
             if( 'upload.php' === $pagenow ) {
+
+                if( in_array( 'administrator', (array) $user->roles ) ) {
+
+                }
 
                 if ($this->taxonomy !== 'category') {
                     $options = array(
@@ -586,6 +592,14 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             );
 
             add_submenu_page(
+                $menu_slug,
+                'Overview',
+                'Overview',
+                'read',
+                'plugin-overview',
+                array( $this, 'overview_markup' ) );
+
+            add_submenu_page(
                 'user-category-access',
                 'Add New Role',
                 'Add New Role',
@@ -600,6 +614,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 'manage_options',
                 'manage-category-access',
                 array( $this, 'restrict_category_access_by_role' ) );
+
+            remove_submenu_page( $menu_slug, $menu_slug );
         }
 
         /**
@@ -631,13 +647,80 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         /**
          *
          */
+        function overview_markup() {
+            echo '<div class="wrap"><h1>Overview</h1></div>';
+        }
+
+
         function add_user_role_markup() {
-            echo '<div class="wrap"><h1>Add New User Role</h1></div>';
+            echo '<div class="wrap"><h1>Add Role</h1></div>';
             $roles = $this->get_all_roles();
             //var_dump( $roles );
-            foreach( $roles as $role ) {
+            /*foreach( $roles as $role ) {
                 echo '<p>' . $role[ 'name' ] . '</p>';
+            }*/ ?>
+            <form method="post" action="<?php echo esc_html( admin_url( 'admin-post.php' ) ); ?>">
+                <table>
+                    <tr>
+                        <th>Role name</th>
+                        <td><input type="text" id="coolmedia_role_name" name="coolmedia_role_name" placeholder="Enter role name" /></td>
+                    </tr>
+                    <tr>
+                        <th>Slug</th>
+                        <td><input type="text" id="coolmedia_role_slug" name="coolmedia_role_slug" placeholder="Enter slug" /></td>
+                    </tr>
+                    <tr>
+                        <th><?php wp_nonce_field( 'coolmedia-role-save', 'coolmedia-role-nonce' ); ?></th>
+                        <td><?php submit_button( 'Save Role' ); ?></td>
+                    </tr>
+                </table>
+            </form>
+        <?php }
+
+        
+        function role_nonce_is_valid() {
+            if( ! isset( $_POST[ 'coolmedia-role-nonce' ] ) ) {
+                return false;
             }
+
+            $field = wp_unslash( $_POST[ 'coolmedia-role-nonce' ] );
+            $action = 'coolmedia-role-save';
+
+            return wp_verify_nonce( $field, $action );
+        }
+
+        /**
+         * https://code.tutsplus.com/tutorials/creating-custom-admin-pages-in-wordpress-2--cms-26926
+         * https://code.tutsplus.com/tutorials/creating-custom-admin-pages-in-wordpress-3--cms-27017
+         * https://premium.wpmudev.org/blog/handling-form-submissions/
+         * http://www.bethedev.com/2016/12/insert-data-in-database-using-form-in.html
+         */
+
+        function save_user_role() {
+            if( ! ( $this->role_nonce_is_valid() && current_user_can( 'manage_options' ) ) ) {
+                // Error
+                return;
+            }
+
+            // Is role slug set?
+            if( ! isset( $_POST[ 'coolmedia_role_slug' ] ) ) {
+                // Error
+                return;
+            }
+
+            // Does the role already exist?
+            // https://docs.ultimatemember.com/article/164-getrole
+            $role_slug = $_POST[ 'coolmedia_role_slug' ];
+            $role = get_role( $role_slug );
+
+            if( ! empty( $role ) ) {
+                // Error. Role already exists
+                return;
+            }
+
+            // Safe to create the new role
+
+
         }
 
 
