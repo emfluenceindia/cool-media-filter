@@ -37,3 +37,45 @@
 .compat-item .term-list .children {
     margin: 5px 0 0 20px;
 }
+
+.form-table {
+    width: 90%;
+    border: 1px solid #dddddd;
+    background: #ffffff;
+    padding: 2em 0;
+}
+
+.form-table tr.first th, .form-table tr.first td {
+    padding-top: 1.6em;
+    vertical-align: middle;
+}
+
+.form-table td, .form-table th {
+    text-align: left;
+    font-weight: normal;
+    padding: .5em;
+}
+
+.form-table th {
+    width: 8%;
+    padding-left: 1em;
+}
+
+.form-table td {
+    width: 60%;
+}
+
+.form-table td ul {
+    margin: 0;
+    width: 350px;
+}
+
+.form-table td ul li {
+    display: inline-block;
+    width: 48%;
+}
+
+.form-table input[type="text"] {
+    width: 350px;
+    padding: .6em;
+}
