@@ -70,6 +70,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
             add_action( 'admin_post_new_user_role', array( $this, 'save_user_role' ) );
+            add_action( 'admin_notices', array( $this, 'maybe_display_notice' ) );
         }
 
         function redirect_to_role_page_after_submission() {
@@ -192,6 +193,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         'show_count' => true,
                         'walker' => new WalkerCategoryFilter(),
                         'value' => 'id',
+                        'exclude' => array( 1, 38 )
                     );
                 }
 
@@ -676,6 +678,12 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
         }
 
+        function display_notice( $notice ) { ?>
+            <div class="error notice add-role-page-notice">
+                <?php echo _e( $notice ); ?>
+            </div>
+        <?php }
+
         /**
          * Look into: https://wordpress.org/plugins/capability-manager-enhanced/
          */
@@ -687,54 +695,53 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 remove_role( 'salon-judge' );
                 remove_role( 'news-editor' );
                 remove_role( 'entrant' );*/
-            //  ***********
-            echo '<div class="wrap"><h1>Add Role</h1></div>'; ?>
-            <form method="post" action="<?php echo esc_html( admin_url( 'admin-post.php' ) ); ?>">
-                <table class="form-table">
-                    <tr class="first">
-                        <th>Role name</th>
-                        <td><input required type="text" id="coolmedia_role_name" name="coolmedia_role_name" placeholder="Enter role name" /></td>
-                    </tr>
-                    <tr>
-                        <th>Slug</th>
-                        <td><input required type="text" id="coolmedia_role_slug" name="coolmedia_role_slug" placeholder="Enter slug" /></td>
-                    </tr>
-                    <tr>
-                        <th>Capabilities</th>
-                        <td>
-                            <ul>
-                                <li>
-                                    <input type="checkbox" id="read" name="read" disabled="disabled" checked="checked">
-                                    <label for="read">Read</label>
-                                </li>
-                                <li>
-                                    <input type="checkbox" id="edit_pages" name="edit_pages">
-                                    <label for="edit_pages">Edit Pages</label>
-                                </li>
-                                <li>
-                                    <input type="checkbox" id="publish_pages" name="publish_pages">
-                                    <label for="publish_pages">Publish Pages</label>
-                                </li>
-                                <li>
-                                    <input type="checkbox" id="edit_posts" name="edit_posts">
-                                    <label for="edit_posts">Edit Posts</label>
-                                </li>
-                                <li>
-                                    <input type="checkbox" id="publish_posts" name="publish_posts">
-                                    <label for="publish_posts">Publish Posts</label>
-                                </li>
-                            </ul>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>
-                            <?php wp_nonce_field( 'coolmedia-role-save', 'coolmedia-role-nonce' ); ?>
-                            <input type="hidden" name="action" value="new_user_role">
-                        </th>
-                        <td><?php submit_button( 'Save Role' ); ?></td>
-                    </tr>
-                </table>
-            </form>
+            //  *********** ?>
+            <div class="wrap">
+                <h1>Add Role</h1>
+                <form method="post" action="<?php echo esc_html( admin_url( 'admin-post.php' ) ); ?>">
+                    <table class="form-table">
+                        <tr class="first">
+                            <th>Role name</th>
+                            <td><input type="text" id="coolmedia_role_name" name="coolmedia_role_name" placeholder="Example: News Editor" /></td>
+                        </tr>
+                        <tr>
+                            <th>Capabilities</th>
+                            <td>
+                                <div></div>
+                                <ul>
+                                    <li>
+                                        <input type="checkbox" id="read" name="read" disabled="disabled" checked="checked">
+                                        <label for="read">Read</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="edit_pages" name="edit_pages">
+                                        <label for="edit_pages">Edit Pages</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="publish_pages" name="publish_pages">
+                                        <label for="publish_pages">Publish Pages</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="edit_posts" name="edit_posts">
+                                        <label for="edit_posts">Edit Posts</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="publish_posts" name="publish_posts">
+                                        <label for="publish_posts">Publish Posts</label>
+                                    </li>
+                                </ul>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <?php wp_nonce_field( 'coolmedia-role-save', 'coolmedia-role-nonce' ); ?>
+                                <input type="hidden" name="action" value="new_user_role">
+                            </th>
+                            <td><?php submit_button( 'Save Role' ); ?></td>
+                        </tr>
+                    </table>
+                </form>
+            </div>
         <?php }
 
         
@@ -765,54 +772,69 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
 
             // Is role slug set?
-            if( ! isset( $_POST[ 'coolmedia_role_name' ] ) ) {
-                // Error
-                return new WP_Error( 'Role name was not specified.' );
+            if( ! isset( $_POST[ 'coolmedia_role_name' ] ) || empty( $_POST[ 'coolmedia_role_name' ] ) ) {
+                // Error. Role name not supplied
+                $notice = 'Role name was not supplied';
+                update_option( 'coolmedia_role_add_error_message', $notice, 'no' );
+                
+                wp_redirect( admin_url( 'admin.php?page=new-user-role' ) );
+
+            } else {
+                
+                // Does the role already exist?
+                // https://docs.ultimatemember.com/article/164-getrole
+                $role_name = $_POST[ 'coolmedia_role_name' ];
+                $role_slug = sanitize_title_with_dashes( $role_name );
+                $role = get_role( $role_slug );
+
+                if( ! empty( $role ) ) {
+                    // Error. Role already exists
+                    $notice = 'Role "' . $role_name . '" already exists';
+                    update_option( 'coolmedia_role_add_error_message', $notice, 'no' );
+
+                    wp_redirect( admin_url( 'admin.php?page=new-user-role' ) );
+                } else {
+                    // Safe to create the new role
+                    $role_caps = array(
+                        'read'  => true,
+                    );
+
+                    if( isset( $_POST[ 'edit_pages' ] ) ) {
+                        $role_caps['edit_pages'] = true;
+                    }
+
+                    if( isset( $_POST[ 'edit_posts' ] ) ) {
+                        $role_caps['edit_posts'] = true;
+                    }
+
+                    if( isset( $_POST[ 'publish_posts' ] ) ) {
+                        $role_caps['publish_posts'] = true;
+                    }
+
+                    if( isset( $_POST[ 'publish_pages' ] ) ) {
+                        $role_caps['publish_pages'] = true;
+                    }
+
+                    add_role( $role_slug, esc_html( $role_name ), $role_caps );
+
+                    
+
+                    // Redirect back to form page
+                    wp_redirect( admin_url( 'admin.php?page=user-roles' ) );
+                }
             }
-
-            // Is role slug set?
-            if( ! isset( $_POST[ 'coolmedia_role_slug' ] ) ) {
-                // Error
-                return new WP_Error( 'Role slug was not specified.' );
-            }
-
-            // Does the role already exist?
-            // https://docs.ultimatemember.com/article/164-getrole
-            $role_name = $_POST[ 'coolmedia_role_name' ];
-            $role_slug = $_POST[ 'coolmedia_role_slug' ];
-            $role = get_role( $role_slug );
-
-            if( ! empty( $role ) ) {
-                // Error. Role already exists
-                return new WP_Error( 'Speficed role ' . $role_name . ' already exists' );
-            }
-
-            // Safe to create the new role
-            $role_caps = array(
-                'read'  => true,
-            );
-
-            if( isset( $_POST[ 'edit_pages' ] ) ) {
-                $role_caps['edit_pages'] = true;
-            }
-
-            if( isset( $_POST[ 'edit_posts' ] ) ) {
-                $role_caps['edit_posts'] = true;
-            }
-
-            if( isset( $_POST[ 'publish_posts' ] ) ) {
-                $role_caps['publish_posts'] = true;
-            }
-
-            if( isset( $_POST[ 'publish_pages' ] ) ) {
-                $role_caps['publish_pages'] = true;
-            }
-
-            add_role( $role_slug, esc_html( $role_name ), $role_caps );
-
-            // Redirect back to form page
-            wp_redirect( admin_url( 'admin.php?page=user-roles' ) );
         }
+
+        function maybe_display_notice() {
+            $notice = get_option( 'coolmedia_role_add_error_message', false );
+
+            if( $notice ) {
+                delete_option( 'coolmedia_role_add_error_message' );
+                $this->display_notice( $notice );
+            }
+        }
+
+
 
 
         /**

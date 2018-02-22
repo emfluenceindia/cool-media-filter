@@ -39,7 +39,7 @@
 }
 
 .form-table {
-    width: 90%;
+    width: 100%;
     border: 1px solid #dddddd;
     background: #ffffff;
     padding: 2em 0;
@@ -78,4 +78,9 @@
 .form-table input[type="text"] {
     width: 350px;
     padding: .6em;
+}
+
+.add-role-page-notice {
+    line-height: 4em;
+    font-weight: bold;
 }
