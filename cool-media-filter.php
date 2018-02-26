@@ -64,6 +64,11 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
                 add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
                 add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
+
+                //add_action( 'admin_footer', array( $this, 'add_media_access_update_script' ) );
+
+                add_action( 'admin_enqueue_scripts', array( $this, 'register_role_category_access' ) );
+                add_action( 'wp_ajax_category_access', array( $this,  'update_role_category_access' ) );
             }
 
             add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
@@ -193,7 +198,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         'show_count' => true,
                         'walker' => new WalkerCategoryFilter(),
                         'value' => 'id',
-                        'exclude' => array( 1, 38 )
+                        //'exclude' => array( 1, 38 )
                     );
                 }
 
@@ -834,37 +839,60 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
         }
 
+        function register_role_category_access() {
+            wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
+            wp_localize_script( 'role_category_access', 'category_access_ajax', array(
+                    'url'   => admin_url( 'admin-ajax.php' ),
+                    'nonce' => wp_create_nonce( 'role_access_nonce' )
+                ) );
+        }
 
+        function update_role_category_access() {
+            /*$update_nonce = $_POST[ 'role_access_nonce' ];
+            if( ! wp_verify_nonce( $update_nonce, 'role_access_nonce' ) ) {
+                die();
+            }*/
+            $user_role = isset( $_POST[ 'user_role' ] ) ? $_POST[ 'user_role' ] : 'Not defined';
+            $selected_cats = isset( $_POST[ 'selected_cats' ] ) ? $_POST[ 'selected_cats' ] : 'None selected';
+            echo "Hello dear...! Role chosen is: " . $user_role . ' and categories are ' . $selected_cats;
+            die();
+        }
 
 
         /**
          * https://wordpress.stackexchange.com/questions/1482/restricting-users-to-view-only-media-library-items-they-have-uploaded
          */
         function restrict_category_access_by_role() { ?>
-            <div class="wrap"><h1>Media Access Restriction</h1>
+            <div class="wrap">
+                <h1>Media Access Restriction</h1>
 
             <?php
             $cats = $this->get_all_categories();
             $roles = $this->get_all_roles();
 
-            foreach( $roles as $role ) { ?>
-                <div style="width: 30%; margin: .5em .5em 0 0; padding: 1em; display: inline-block; background: #fdfdfd;">
-                <h3 style="margin: 0 auto; font-weight: normal;">
-                    <input type="hidden" class="hidden_roleid" value="<?php echo $role['name']; ?>" />
-                    <?php echo $role['name']; ?>
-                </h3>
-                <?php foreach( $cats as $cat ) { ?>
-                    <div style="margin: .5em 0;">
-                        <input type="checkbox" value="<?php echo $cat->ID ?>" />
-                        &nbsp; <?php echo $cat->name; ?>
-                    </div>
-                <?php }
+            foreach( $roles as $role ) {
+                if( strtolower( $role[ 'name' ] ) == 'administrator' ) { //Administrator has full access. We skip this
+                    continue;
+                } ?>
+                <div class="access-box">
+                    <input type="hidden" class="hidden_role" value="<?php echo  sanitize_title_with_dashes( $role['name'] ); ?>" />
+                    <h3 style="margin: 0 auto; font-weight: normal;">
+                        <?php echo $role['name']; ?>
+                    </h3>
+                    <?php foreach( $cats as $cat ) { ?>
+                        <div class="category-list">
+                            <input class="cat-check" type="checkbox" value="<?php echo $cat->term_id ?>" />
+                            &nbsp; <?php echo $cat->name; ?>
+                        </div>
+                    <?php } ?>
 
-                echo '</div>';
-            }
+                    <input type="button" onclick="updateAccess(this);" value="Update <?php echo rand(); ?>" class="access_update button button-primary" />
 
-            echo '</div>';
-        }
+                </div>
+            <?php } ?>
+
+            </div>
+        <?php }
 
         /**
          * @param bool $editable_only

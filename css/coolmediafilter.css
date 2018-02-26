@@ -84,3 +84,15 @@
     line-height: 4em;
     font-weight: bold;
 }
+
+.access-box {
+    width: 30%;
+    margin: .5em .5em 0 0; 
+    padding: 1em; 
+    display: inline-block;
+    background: #fdfdfd;
+}
+
+.category-list {
+    margin: .5em 0;
+}
