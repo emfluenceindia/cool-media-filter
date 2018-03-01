@@ -927,6 +927,29 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             return $cats;
         }
 
+        static function activate() {
+            global $wpdb;
+            $map_table = $wpdb->prefix . 'category_role';
+
+            if( $wpdb->get_var( "show tables like '$map_table'" ) != $map_table ) {
+                
+                $sql = "CREATE TABLE " . $map_table . " (
+                `id` mediumint(9) NOT NULL AUTO_INCREMENT,
+                `site_id` mediumint(9) NOT NULL,
+                `user_role` mediumtext NOT NULL,
+                `cat_id` mediumint(9) NOT NULL,
+                UNIQUE KEY id ( id ));";
+
+                require_once( ABSPATH . '/wp-admin/includes/upgrade.php' );
+
+                dbDelta( $sql );
+            }
+        }
+
+        static function on_plugin_deactivate() {
+
+        }
+
     }
 }
 
@@ -938,7 +961,8 @@ if( class_exists( 'CoolMediaFilter') ) {
 require_once plugin_dir_path(__FILE__) . 'inc/plugin-actions.php';
 
 //activate
-register_activation_hook( __FILE__, array( 'PluginAction', 'activate' ) );
+//register_activation_hook( __FILE__, array( 'PluginAction', 'activate' ) );
+register_activation_hook( __FILE__, array( 'CoolMediaFilter', 'activate' ) );
 
 //deactivate
-register_deactivation_hook( __FILE__, array( 'PluginAction', 'deactivate' ) );
+register_deactivation_hook( __FILE__, array( 'CoolMediaFilter', 'on_plugin_deactivate' ) );
