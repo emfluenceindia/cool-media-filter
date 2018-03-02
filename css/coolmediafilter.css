@@ -90,6 +90,7 @@
     margin: .5em .5em 0 0; 
     padding: 1em; 
     display: inline-block;
+    vertical-align: top;
     background: #fdfdfd;
 }
 

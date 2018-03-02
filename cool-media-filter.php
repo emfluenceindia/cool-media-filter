@@ -854,7 +854,36 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }*/
             $user_role = isset( $_POST[ 'user_role' ] ) ? $_POST[ 'user_role' ] : 'Not defined';
             $selected_cats = isset( $_POST[ 'selected_cats' ] ) ? $_POST[ 'selected_cats' ] : 'None selected';
-            echo "Hello dear...! Role chosen is: " . $user_role . ' and categories are ' . $selected_cats;
+            $site_id = isset( $_POST[ 'site_id' ] ) ? $_POST[ 'site_id' ] : 'Undefined';
+
+            //echo "Hello dear...! Role chosen is: " . $user_role . ' and categories are ' . $selected_cats . " on site id: " . $site_id;
+
+            //We have all the information back from AJAX. Now we save them in the table
+
+            //var_dump( $selected_cats );
+
+            global $wpdb;
+            $table_name = explode( '_',  $wpdb->prefix )[0] . "_" . "category_role";
+
+            $cats = explode( ',', $selected_cats );
+            if( ! empty( $cats ) ) {
+                //echo sizeof( $arr_cats );
+                foreach( $cats as $cat ) {
+                    $wpdb->insert( $table_name,
+                        array(
+                            'site_id'   => $site_id,
+                            'user_role' => $user_role,
+                            'cat_id'    => $cat
+                        ),
+                        array(
+                            '%d',
+                            '%s',
+                            '%d'
+                        )
+                    );
+                }
+            }
+
             die();
         }
 
@@ -870,23 +899,52 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $cats = $this->get_all_categories();
             $roles = $this->get_all_roles();
 
+            $current_site = get_blog_details();
+            $site_id = $current_site->id;
+
             foreach( $roles as $role ) {
                 if( strtolower( $role[ 'name' ] ) == 'administrator' ) { //Administrator has full access. We skip this
                     continue;
                 } ?>
                 <div class="access-box">
                     <input type="hidden" class="hidden_role" value="<?php echo  sanitize_title_with_dashes( $role['name'] ); ?>" />
+                    <input type="hidden" class="site_id" value="<?php echo $site_id ?>" />
                     <h3 style="margin: 0 auto; font-weight: normal;">
                         <?php echo $role['name']; ?>
                     </h3>
+
+                    <?php
+                    //Get records from wp_caegory_role table
+                    global $wpdb;
+                    $query = "SELECT *
+                    FROM wp_category_role WHERE site_id = " . $site_id . " AND user_role = '" . sanitize_title_with_dashes( $role['name'] ) . "'";
+                    //var_dump( $query );
+                    $result = $wpdb->get_results( $query, OBJECT );
+
+                    ?>
+
                     <?php foreach( $cats as $cat ) { ?>
+                        <?php //var_dump( $cat->term_id ); ?>
                         <div class="category-list">
-                            <input class="cat-check" type="checkbox" value="<?php echo $cat->term_id ?>" />
-                            &nbsp; <?php echo $cat->name; ?>
+                        <!-- <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?> -->
+                            <?php  
+                            if( ! empty( $result ) ) {
+                                foreach( $result as $record ) {
+                                    echo ( $record->cat_id . ' ' . $cat->term_id );
+                                    if( $record->cat_id == $cat->term_id ) { ?>
+                                        <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>
+                                    <?php } else { ?>
+                                        <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>   
+                                    <?php }
+                                }
+                            } else { ?>
+                                <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>   
+                            <?php }                            
+                            ?>
                         </div>
                     <?php } ?>
 
-                    <input type="button" onclick="updateAccess(this);" value="Update <?php echo rand(); ?>" class="access_update button button-primary" />
+                    <input type="button" onclick="updateAccess(this);" value="Update" class="access_update button button-primary" />
 
                 </div>
             <?php } ?>

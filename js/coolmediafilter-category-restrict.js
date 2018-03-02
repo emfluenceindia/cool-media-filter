@@ -2,6 +2,7 @@ function updateAccess( obj ) {
     var selectedCatIds = "";
     var accessBox =  jQuery( obj ).closest( '.access-box' );
     var roleSlug = jQuery( accessBox ).find(".hidden_role").attr("value");
+    var siteId = jQuery( accessBox ).find(".site_id").attr("value");
     var catList = jQuery( obj ).closest( '.access-box' ).find( '.category-list' );
     jQuery( catList ).children().each( function() {
         if( jQuery(this).is(":checked") ) {
@@ -26,6 +27,7 @@ function updateAccess( obj ) {
     		action: 'category_access', //wp_ajax_category_access: 71
     		user_role: roleSlug,
     		selected_cats: selectedCatIds,
+            site_id: siteId
     	},
     	success: function( result ) {
     		alert( result );
