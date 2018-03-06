@@ -30,7 +30,7 @@ function updateAccess( obj ) {
             site_id: siteId
     	},
     	success: function( result ) {
-    		alert( result );
+    		//alert( result );
     	}
     });
 }

@@ -69,6 +69,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
                 add_action( 'admin_enqueue_scripts', array( $this, 'register_role_category_access' ) );
                 add_action( 'wp_ajax_category_access', array( $this,  'update_role_category_access' ) );
+                add_action( 'wp_ajax_role_permission', array( $this,  'update_caps_by_role' ) );
             }
 
             add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
@@ -76,6 +77,94 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
             add_action( 'admin_post_new_user_role', array( $this, 'save_user_role' ) );
             add_action( 'admin_notices', array( $this, 'maybe_display_notice' ) );
+        }
+
+        function register_role_category_access() {
+            wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
+            
+            wp_localize_script( 'role_category_access', 'category_access_ajax', array(
+                    'url'   => admin_url( 'admin-ajax.php' ),
+                    'nonce' => wp_create_nonce( 'role_access_nonce' )
+                ) );
+
+            wp_enqueue_script( 'update_role_permission', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-update-role-permission.js', array( 'jquery' ), '1.0.0', true );
+
+            wp_localize_script( 'update_role_permission', 'role_permission_ajax', array(
+                    'url'   => admin_url( 'admin-ajax.php' ),
+                    'nonce' => wp_create_nonce( 'update_role_permissions_nonce' )
+                ) );
+        }        
+
+        /**
+        * Remove all existing caps from current role
+        * Add new caps to this role
+        */
+        function update_caps_by_role() {
+            $role_key = isset( $_POST[ 'role_key' ] ) ? $_POST[ 'role_key' ] : 'Not defined';
+            $new_caps = isset( $_POST[ 'new_caps' ] ) ? $_POST[ 'new_caps' ] : '';
+            
+            $xeisting_role_caps = get_role( $role_key )->capabilities;
+
+            $cap_key_str = "";
+
+            foreach( $existing_role_caps as $key => $value ) {
+                $cap_key_str = $cap_key_str . $key . ',';
+                //Remove this cap from $role_key
+            }
+
+            // Add new caps now
+            $new_cap_array = explode( ',', $new_caps );
+            array_pop( $new_cap_array );
+            var_dump( $new_cap_array );
+
+            foreach( $new_cap_array as $new_cap_key => $new_cap_value ) {
+                //Add caps to $role_key
+            }
+
+            die();
+
+
+            //var_dump( $cap_key_str );
+        }
+
+        function update_role_category_access() {
+            /*$update_nonce = $_POST[ 'role_access_nonce' ];
+            if( ! wp_verify_nonce( $update_nonce, 'role_access_nonce' ) ) {
+                die();
+            }*/
+            $user_role = isset( $_POST[ 'user_role' ] ) ? $_POST[ 'user_role' ] : 'Not defined';
+            $selected_cats = isset( $_POST[ 'selected_cats' ] ) ? $_POST[ 'selected_cats' ] : 'None selected';
+            $site_id = isset( $_POST[ 'site_id' ] ) ? $_POST[ 'site_id' ] : 'Undefined';
+
+            //echo "Hello dear...! Role chosen is: " . $user_role . ' and categories are ' . $selected_cats . " on site id: " . $site_id;
+
+            //We have all the information back from AJAX. Now we save them in the table
+
+            //var_dump( $selected_cats );
+
+            global $wpdb;
+            $table_name = explode( '_',  $wpdb->prefix )[0] . "_" . "category_role";
+
+            $cats = explode( ',', $selected_cats );
+            if( ! empty( $cats ) ) {
+                //echo sizeof( $arr_cats );
+                foreach( $cats as $cat ) {
+                    $wpdb->insert( $table_name,
+                        array(
+                            'site_id'   => $site_id,
+                            'user_role' => $user_role,
+                            'cat_id'    => $cat
+                        ),
+                        array(
+                            '%d',
+                            '%s',
+                            '%d'
+                        )
+                    );
+                }
+            }
+
+            die();
         }
 
         function redirect_to_role_page_after_submission() {
@@ -614,7 +703,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             add_submenu_page(
                 'user-category-access',
                 'All Roles',
-                'All Roles',
+                'Roles and Permissions',
                 'manage_options',
                 'user-roles',
                 array( $this, 'list_user_roles' ) );
@@ -671,16 +760,85 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             echo '<div class="wrap"><h1>Overview</h1></div>';
         }
 
+        function assignable_caps_list() {
+            $caps = array();
+            
+            array_push($caps, 
+                "read",
+                "read_private_pages",
+                "read_private_posts",
+                "edit_users", 
+                "manage_options", 
+                "edit_posts", 
+                "edit_others_posts",
+                "publish_posts",
+                "edit_pages",
+                "edit_others_pages",
+                "publish_pages",
+                "list_users",
+                "create_users",
+                "upload_files"
+                );
+
+            return $caps;
+        }
+
         /**
          *
          */
         function list_user_roles() {
-            echo '<div class="wrap"><h1>User Roles</h1></div>';
+            echo '<div class="wrap"><h1>Roles and Permissions</h1></div>';
             $roles = $this->get_all_roles();
-            //var_dump( $roles );
+            //var_dump ( $roles );
+
+            //var_dump ( $this->assignable_caps_list() );
+
             foreach( $roles as $role ) {
-                echo '<p>' . $role[ 'name' ] . '</p>';
-            }
+                if( strtolower( $role[ 'name' ] ) === 'administrator') {
+                    continue;
+                } ?>
+                <div class="user_role_update_list">
+                    <h3><?php echo $role[ 'name' ] ?></h3>
+                    <?php
+                    $role_slug = sanitize_title_with_dashes( $role[ 'name' ] );
+                    //Get assignable caps
+                    $caps = $this->assignable_caps_list(); ?>
+                    <div>
+                    <!-- Iterate through roles -->
+                    <?php
+                    foreach( $roles as $key => $value ) {
+                        if( 'administrator' === $key || $role_slug !== $key ) {
+                            continue;
+                        } ?>
+
+                        <input type="hidden" class="role_key" value="<?php echo $key; ?>" />
+
+                        <?php
+                        //Get array of caps for this role.
+                        $caps_by_role = $value[ 'capabilities' ];
+
+                        $arr_per_role_cap = array();
+                        foreach( $caps_by_role as $role_cap_key => $role_cap_value ) {
+                            //Put each cap_value in another array to be used for comparison
+                            array_push( $arr_per_role_cap, $role_cap_key );
+                        }
+
+                        foreach( $caps as $cap ) {
+                            //iterate thorugh all assignable caps
+                            //Inner loop to iterate through all available caps for current role
+                            //Check if current $arr_per_role_cap has the $cap in it. If yes, auto check the caps checkbox
+                            ?>
+
+                            <p><input class="single-cap" <?php if( in_array( $cap, $arr_per_role_cap ) ) echo "checked"; ?> type="checkbox" <?php if( 'read' === $cap ) echo "disabled" ?> id="<?php echo $cap . "_" . $role_slug; ?>" name="<?php echo $cap; ?>">
+                                        <span><label style="text-transform: capitalize;" for="<?php echo $cap . "_" . $role_slug; ?>">
+                                        <?php echo str_replace( "_", " ", $cap ); ?>
+                                    </label></span></p>
+                        <?php }
+                    } ?>
+                    </div>
+                    <input type="button" onclick="updateRoleCaps( this );" class="button button-primary" value="Update Permission" />
+                </div>
+            <?php }
         }
 
         function display_notice( $notice ) { ?>
@@ -719,8 +877,20 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                                         <label for="read">Read</label>
                                     </li>
                                     <li>
+                                        <input type="checkbox" id="read_private_posts" name="read_private_posts">
+                                        <label for="read_private_posts">Read Private Posts</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="read_private_pages" name="read_private_pages">
+                                        <label for="read_private_pages">Read Private Pages</label>
+                                    </li>
+                                    <li>
                                         <input type="checkbox" id="edit_pages" name="edit_pages">
                                         <label for="edit_pages">Edit Pages</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="edit_others_pages" name="edit_others_pages">
+                                        <label for="edit_others_pages">Edit Others' Pages</label>
                                     </li>
                                     <li>
                                         <input type="checkbox" id="publish_pages" name="publish_pages">
@@ -731,8 +901,28 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                                         <label for="edit_posts">Edit Posts</label>
                                     </li>
                                     <li>
+                                        <input type="checkbox" id="edit_others_posts" name="edit_others_posts">
+                                        <label for="edit_others_posts">Edit Others' Posts</label>
+                                    </li>
+                                    <li>
                                         <input type="checkbox" id="publish_posts" name="publish_posts">
                                         <label for="publish_posts">Publish Posts</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="list_users" name="list_users">
+                                        <label for="list_users">List Users</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="create_users" name="create_users">
+                                        <label for="create_users">Create Users</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="edit_users" name="edit_users">
+                                        <label for="edit_users">Edit Users</label>
+                                    </li>
+                                    <li>
+                                        <input type="checkbox" id="manage_options" name="manage_options">
+                                        <label for="manage_options">Manage Options</label>
                                     </li>
                                 </ul>
                             </td>
@@ -839,52 +1029,22 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
         }
 
-        function register_role_category_access() {
-            wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
-            wp_localize_script( 'role_category_access', 'category_access_ajax', array(
-                    'url'   => admin_url( 'admin-ajax.php' ),
-                    'nonce' => wp_create_nonce( 'role_access_nonce' )
-                ) );
-        }
+        function get_category_id_array() {
+            $cats = $this->get_all_categories();
+            $cat_ids = array();
 
-        function update_role_category_access() {
-            /*$update_nonce = $_POST[ 'role_access_nonce' ];
-            if( ! wp_verify_nonce( $update_nonce, 'role_access_nonce' ) ) {
-                die();
-            }*/
-            $user_role = isset( $_POST[ 'user_role' ] ) ? $_POST[ 'user_role' ] : 'Not defined';
-            $selected_cats = isset( $_POST[ 'selected_cats' ] ) ? $_POST[ 'selected_cats' ] : 'None selected';
-            $site_id = isset( $_POST[ 'site_id' ] ) ? $_POST[ 'site_id' ] : 'Undefined';
-
-            //echo "Hello dear...! Role chosen is: " . $user_role . ' and categories are ' . $selected_cats . " on site id: " . $site_id;
-
-            //We have all the information back from AJAX. Now we save them in the table
-
-            //var_dump( $selected_cats );
-
-            global $wpdb;
-            $table_name = explode( '_',  $wpdb->prefix )[0] . "_" . "category_role";
-
-            $cats = explode( ',', $selected_cats );
-            if( ! empty( $cats ) ) {
-                //echo sizeof( $arr_cats );
-                foreach( $cats as $cat ) {
-                    $wpdb->insert( $table_name,
-                        array(
-                            'site_id'   => $site_id,
-                            'user_role' => $user_role,
-                            'cat_id'    => $cat
-                        ),
-                        array(
-                            '%d',
-                            '%s',
-                            '%d'
-                        )
-                    );
-                }
+            foreach( $cats as $cat ) {
+                array_push( $cat_ids, $cat->term_id );
             }
 
-            die();
+            return $cat_ids;
+        }
+
+        /**
+        *
+        */
+        function get_cleaned_up_category_ids_by_user_role() {
+            $all_cats = $this->get_category_id_array();
         }
 
 
@@ -898,6 +1058,20 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             <?php
             $cats = $this->get_all_categories();
             $roles = $this->get_all_roles();
+
+            //$ar = $this->get_category_id_array();
+            //var_dump( $ar );
+
+            $u = wp_get_current_user();
+            $r = ( array ) $u->roles;
+            var_dump ( $r );
+
+            //if( $key = array_search(38, $ar) !== false ) {
+              //  unset( $ar[ $key ] );
+            //}
+
+            //echo "<hr />";
+            //var_dump ( $ar );
 
             $current_site = get_blog_details();
             $site_id = $current_site->id;
@@ -913,34 +1087,16 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         <?php echo $role['name']; ?>
                     </h3>
 
-                    <?php
-                    //Get records from wp_caegory_role table
-                    global $wpdb;
-                    $query = "SELECT *
-                    FROM wp_category_role WHERE site_id = " . $site_id . " AND user_role = '" . sanitize_title_with_dashes( $role['name'] ) . "'";
-                    //var_dump( $query );
-                    $result = $wpdb->get_results( $query, OBJECT );
-
-                    ?>
-
                     <?php foreach( $cats as $cat ) { ?>
-                        <?php //var_dump( $cat->term_id ); ?>
                         <div class="category-list">
-                        <!-- <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?> -->
-                            <?php  
-                            if( ! empty( $result ) ) {
-                                foreach( $result as $record ) {
-                                    echo ( $record->cat_id . ' ' . $cat->term_id );
-                                    if( $record->cat_id == $cat->term_id ) { ?>
-                                        <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>
-                                    <?php } else { ?>
-                                        <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>   
-                                    <?php }
-                                }
-                            } else { ?>
-                                <input class="cat-check" checked type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>   
-                            <?php }                            
-                            ?>
+                        <?php
+                        //Get records from wp_caegory_role table
+                        global $wpdb;
+                        $query = "SELECT *
+                        FROM wp_category_role WHERE site_id = " . $site_id . " AND user_role = '" . sanitize_title_with_dashes( $role['name'] ) . "' AND cat_id = " . $cat->term_id;
+                        
+                        $result = $wpdb->get_results( $query, OBJECT ); ?>
+                            <input class="cat-check" <?php if( ! empty( $result ) ) echo "checked" ?> type="checkbox" value="<?php echo $cat->term_id ?>" />&nbsp; <?php echo $cat->name; ?>
                         </div>
                     <?php } ?>
 

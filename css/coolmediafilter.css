@@ -97,3 +97,22 @@
 .category-list {
     margin: .5em 0;
 }
+
+.user_role_update_list {
+    display: inline-block;
+    width: 28%;
+    vertical-align: top; 
+    border: 1px solid #dddddd;
+    padding: 1em;
+    margin: 1em .6em 0 0;
+    background: #ffffff;
+}
+
+.user_role_update_list h3 {
+    margin: 0 auto;
+    font-weight: normal;
+}
+
+.user_role_update_list p {
+    margin: .3em auto;
+}
