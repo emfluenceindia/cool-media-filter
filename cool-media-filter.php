@@ -103,28 +103,25 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $role_key = isset( $_POST[ 'role_key' ] ) ? $_POST[ 'role_key' ] : 'Not defined';
             $new_caps = isset( $_POST[ 'new_caps' ] ) ? $_POST[ 'new_caps' ] : '';
             
-            $xeisting_role_caps = get_role( $role_key )->capabilities;
+            //var_dump( $role_key );
+            $old_caps = get_role( $role_key )->capabilities;
+            var_dump( $old_caps );
 
-            $cap_key_str = "";
+            global $wp_roles;
 
-            foreach( $existing_role_caps as $key => $value ) {
-                $cap_key_str = $cap_key_str . $key . ',';
-                //Remove this cap from $role_key
+            //Remove caps
+            foreach( $old_caps as $old_cap_key => $old_cap_value ) {
+                $wp_roles->remove_cap( $role_key, $old_cap_key );
             }
 
-            // Add new caps now
-            $new_cap_array = explode( ',', $new_caps );
-            array_pop( $new_cap_array );
-            var_dump( $new_cap_array );
+            //Add new caps
+            $new_caps_array = explode( ',', $new_caps );
 
-            foreach( $new_cap_array as $new_cap_key => $new_cap_value ) {
-                //Add caps to $role_key
+            foreach( $new_caps_array as $new_cap ) {
+                $wp_roles->add_cap( $role_key, $new_cap );
             }
-
-            die();
-
-
-            //var_dump( $cap_key_str );
+            
+            die;
         }
 
         function update_role_category_access() {
@@ -758,6 +755,17 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
          */
         function overview_markup() {
             echo '<div class="wrap"><h1>Overview</h1></div>';
+            $user = wp_get_current_user();
+            $role = ( array ) $user->roles;
+
+            $user_id = get_current_user_id();
+            $user_data = get_userdata( $user_id );
+            if( is_object( $user_data ) ) {
+                $user_caps = $user_data->allcaps;
+                var_dump( $user_caps );
+            }
+
+            //var_dump ( $user_id );
         }
 
         function assignable_caps_list() {
@@ -816,6 +824,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         <?php
                         //Get array of caps for this role.
                         $caps_by_role = $value[ 'capabilities' ];
+                        //var_dump( $caps_by_role );
 
                         $arr_per_role_cap = array();
                         foreach( $caps_by_role as $role_cap_key => $role_cap_value ) {
@@ -1064,7 +1073,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
             $u = wp_get_current_user();
             $r = ( array ) $u->roles;
-            var_dump ( $r );
+            //var_dump ( $r );
 
             //if( $key = array_search(38, $ar) !== false ) {
               //  unset( $ar[ $key ] );

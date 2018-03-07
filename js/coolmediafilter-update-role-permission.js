@@ -11,10 +11,16 @@ function updateRoleCaps( obj ) {
     var selectedCaps = "";
     jQuery ( container ).find( ".single-cap" ).each( function() {
         if( jQuery( this ).is( ":checked" ) ) {
-            selectedCaps+= jQuery( this ).attr( "name" ) + ",";
+            selectedCaps = selectedCaps + jQuery( this ).attr( "name" ) + ",";
             //alert( jQuery( this ).attr( "name" ) );
         }
     } );
+
+    if( jQuery.trim(selectedCaps) != "" ) {
+        selectedCaps = selectedCaps.slice( 0, -1 );
+    }
+
+    //alert(selectedCaps);
 
     jQuery.ajax({
         type: 'POST',
@@ -25,8 +31,7 @@ function updateRoleCaps( obj ) {
             new_caps: selectedCaps,
         },
         success: function( result ) {
-            //alert( selectedCaps );
-            alert( result );
+            //alert( result );
         }
     });
 
