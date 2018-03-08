@@ -258,9 +258,15 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
             if( 'upload.php' === $pagenow ) {
 
-                if( in_array( 'administrator', (array) $user->roles ) ) {
+                /*if( in_array( 'administrator', (array) $user->roles ) ) {
 
-                }
+                }*/
+
+                //First we find which role current user is in.
+                //Then we find category_ids allowed to be accessed by current role.
+                //All other category_ids will go into exclude array.
+
+                $role_cats = $this->get_accessible_categories();
 
                 if ($this->taxonomy !== 'category') {
                     $options = array(
@@ -284,7 +290,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         'show_count' => true,
                         'walker' => new WalkerCategoryFilter(),
                         'value' => 'id',
-                        //'exclude' => array( 1, 38 )
+                        'include' => $role_cats
                     );
                 }
 
@@ -747,6 +753,67 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
          */
         function plugin_options_page() {
             echo '<div class="wrap"><h1>Cool Media Filter</h1></div>';
+        }
+
+        /**
+        * Get current User
+        */
+        function get_current_user( $user = null ) {
+            $user = $user ? new WP_User( $user ) : wp_get_current_user();
+            return $user;
+        }
+
+        /**
+        * Get current site
+        */
+        function get_current_site() {
+            $current_site = get_blog_details();
+            return $current_site;
+        }
+
+        /**
+        * Get current user's role
+        */
+        function get_current_user_role() {
+            $user = $this->get_current_user();
+            return $user->roles ? $user->roles[ 0 ] : false;
+        }
+
+        /**
+        * Get category_ids accessible by current user role
+        */
+        function get_accessible_categories() {
+            global $wpdb;
+
+            $user_role = $this->get_current_user_role();
+            $current_site = $this->get_current_site();
+            
+            $query = "SELECT *
+            FROM wp_category_role WHERE site_id = " . $current_site->id . " AND user_role = '" . $user_role . "'";
+            
+            $result = $wpdb->get_results( $query, OBJECT );
+
+            $filter_cats = array();
+
+            foreach( $result as $item ) {
+                array_push( $filter_cats, (int) $item->cat_id );
+            }
+
+            return $filter_cats;
+        }
+
+        /**
+        * Get category_ids excluded for current user role
+        */
+        function get_category_exclusion_for_current_user_role() {
+            $all_cats = get_categories();
+            $user_cats = $this->get_accessible_categories();
+            var_dump( $user_cats );
+
+            //$exclusion = array_diff( $all_cats, $user_cats );
+            
+            //var_dump( $exclusion );
+            return $all_cats;
         }
 
 
