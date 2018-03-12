@@ -299,7 +299,15 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         }
 
         function bulk_admin_footer() {
-            $terms = get_terms( $this->taxonomy, 'hide_empty=0' );
+            $role_cats = $this->get_accessible_categories();
+
+            $args = array(
+                'hide_empty'    => false,
+                'include'       => $role_cats,
+            );
+
+            $terms = get_terms( $this->taxonomy, $args );
+
 
             if( $terms && !is_wp_error( $terms ) ) {
                 //Prepare terms here...
@@ -333,16 +341,22 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                     echo "jQuery('<option style=\"color: #000000;\">').val('coolmediafilter_remove_" . $term->term_taxonomy_id . "').text('" . $str_remove_option_item . "').appendTo('#coolmediafilter_optgroup4');";
                 }
 
-                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup5" label="' .  html_entity_decode( __( 'Bulk Action &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
-                echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup6" label="' .  html_entity_decode( __( 'Bulk Action &raquo;', $this->text_domain ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
+                $term_count = wp_count_terms( $this->taxonomy, $args );
+
+                if( $term_count > 1 ) {
+
+                    echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup5" label="' . html_entity_decode(__('Bulk Action &raquo;', $this->text_domain), ENT_QUOTES, 'UTF-8') . '">\').appendTo("select[name=\'action\']");';
+                    echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup6" label="' . html_entity_decode(__('Bulk Action &raquo;', $this->text_domain), ENT_QUOTES, 'UTF-8') . '">\').appendTo("select[name=\'action2\']");';
 
 
-                /**
-                 * Remove all categories
-                 */
+                    /**
+                     * Remove all categories
+                     */
 
-                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Remove all categories', $this->text_domain ) ) . "').appendTo('#coolmediafilter_optgroup5');";
-                echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(  __( 'Remove all categories', $this->text_domain ) ) . "').appendTo('#coolmediafilter_optgroup6');";
+
+                    echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(__('Remove all categories', $this->text_domain)) . "').appendTo('#coolmediafilter_optgroup5');";
+                    echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js(__('Remove all categories', $this->text_domain)) . "').appendTo('#coolmediafilter_optgroup6');";
+                }
 
                 echo '})'; // anonymous function definition ends
 
