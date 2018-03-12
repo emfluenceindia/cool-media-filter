@@ -59,7 +59,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 add_action( 'admin_footer-upload.php', array( $this, 'bulk_admin_footer' ) );
                 add_action( 'load-upload.php', array( $this, 'bulk_admin_action' ) );
                 add_action( 'admin_notices', array( $this, 'bulk_admin_notice' ) );
-                //add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
+                add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
                 add_action( 'ajax_query_attachments_args', array( $this, 'ajax_attachment_query_builder' ) );
                 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
                 add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
@@ -67,19 +67,56 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
                 //add_action( 'admin_footer', array( $this, 'add_media_access_update_script' ) );
 
-                add_action( 'admin_enqueue_scripts', array( $this, 'register_role_category_access' ) );
+                add_action( 'admin_enqueue_scripts', array( $this, 'localize_scripts' ) );
                 add_action( 'wp_ajax_category_access', array( $this,  'update_role_category_access' ) );
                 add_action( 'wp_ajax_role_permission', array( $this,  'update_caps_by_role' ) );
             }
 
             add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
+
+            add_action ('pre_get_posts', array( $this, 'load_media_files_by_category_restriction_for_current_user_role' ) );
+
             //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
             add_action( 'admin_post_new_user_role', array( $this, 'save_user_role' ) );
             add_action( 'admin_notices', array( $this, 'maybe_display_notice' ) );
         }
 
-        function register_role_category_access() {
+        function load_media_files_by_category_restriction_for_current_user_role() {
+            global $wp_query;
+            $this->load_media_by_role( $wp_query );
+
+        }
+
+        function load_media_by_role( $query ) {
+            if( ! is_admin() ) {
+                return;
+            }
+
+            //Get array of categories accessible by current user role to pass in $tax_query.
+            $cats = $this->get_accessible_categories();
+
+            if( $query->is_main_query() ) {
+                if( 'attachment' == $query->get('post_type') ) {
+
+                    if( ! current_user_can( 'administrator' ) ) {
+                        $tax_query = array(
+                            array(
+                                'taxonomy' => 'category',
+                                'field' => 'id',
+                                'terms' => $cats,
+                                'operator' => 'IN',
+                            )
+                        );
+
+                        $query->set( 'tax_query', $tax_query );
+
+                    }
+                }
+            }
+        }
+
+        function localize_scripts() {
             wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
             
             wp_localize_script( 'role_category_access', 'category_access_ajax', array(
@@ -93,7 +130,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                     'url'   => admin_url( 'admin-ajax.php' ),
                     'nonce' => wp_create_nonce( 'update_role_permissions_nonce' )
                 ) );
-        }        
+        }
 
         /**
         * Remove all existing caps from current role
@@ -298,6 +335,9 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
         }
 
+        /**
+         * We do not need it (for now)
+         */
         function bulk_admin_footer() {
             $role_cats = $this->get_accessible_categories();
 
@@ -558,7 +598,13 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 echo '/* ]]> */';
                 echo '</script>';
 
-                wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+                wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-view.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+                //wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/cmf-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+
+                wp_localize_script( 'coolmediafilter-media-views', 'MediaLibraryCategoryFilterOptions', array(
+                    'terms'     => get_terms(
+                        $this->taxonomy, array( 'hide_empty' => false ) ),
+                ) );
             }
 
             wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.0' );
