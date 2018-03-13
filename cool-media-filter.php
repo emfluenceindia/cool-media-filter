@@ -61,9 +61,11 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 add_action( 'admin_notices', array( $this, 'bulk_admin_notice' ) );
                 add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
                 add_action( 'ajax_query_attachments_args', array( $this, 'ajax_attachment_query_builder' ) );
+
                 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
-                add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
-                add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
+
+                /*add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
+                add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );*/
 
                 //add_action( 'admin_footer', array( $this, 'add_media_access_update_script' ) );
 
@@ -78,10 +80,21 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             add_action( 'load-upload.php', array( $this, 'load_media_by_category_access' ) );
             //add_action( 'admin_init', array( $this, 'load_media_by_category_access' ) );
 
+            add_filter( 'ajax_query_attachments_args', array( $this, 'load_media_library_by_category_access' ), 10, 1 );
+
             //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
             add_action( 'admin_post_new_user_role', array( $this, 'save_user_role' ) );
             add_action( 'admin_notices', array( $this, 'maybe_display_notice' ) );
+        }
+
+        function load_media_library_by_category_access( $query = array() ) {
+            $user_id = get_current_user_id();
+            if( $user_id ) {
+                $query['author'] = $user_id;
+            }
+
+            return $query;
         }
 
         function load_media_by_category_access() {
@@ -578,6 +591,9 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             return $query;
         }
 
+        /**
+         * Adds category dropdown in grid view mode
+         */
         function enqueue_media_action() {
             require_once plugin_dir_path( __FILE__ ) . 'classes/class-walker-category-mediagrid-filter.php';
 
