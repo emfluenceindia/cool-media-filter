@@ -3,16 +3,14 @@
      * Create a new MediaLibraryTaxonomyFilter we later will instantiate
      */
     var MediaLibraryCategoryFilter = wp.media.view.AttachmentFilters.extend({
-        id: 'media-category-filter',
+        id: 'media-view-category-filter',
 
         createFilters: function() {
             var filters = {};
             // Formats the 'terms' we've included via wp_localize_script()
             _.each( MediaLibraryCategoryFilterOptions.terms || {}, function( value, index ) {
-                //alert(value.term_id);
                 filters[ value.term_id ] = {
                     text: value.name,
-                    //value: value.term_id,
                     props: {
                         // The WP_Query var for the taxonomy
                         category: value.term_id,

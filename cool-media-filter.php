@@ -170,16 +170,16 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $selected_cats = isset( $_POST[ 'selected_cats' ] ) ? $_POST[ 'selected_cats' ] : 'None selected';
             $site_id = isset( $_POST[ 'site_id' ] ) ? $_POST[ 'site_id' ] : 'Undefined';
 
-            //echo "Hello dear...! Role chosen is: " . $user_role . ' and categories are ' . $selected_cats . " on site id: " . $site_id;
-
-            //We have all the information back from AJAX. Now we save them in the table
-
-            //var_dump( $selected_cats );
-
+            //We have all the information back from AJAX. Now we are good to save them in our map table
             global $wpdb;
             $table_name = explode( '_',  $wpdb->prefix )[0] . "_" . "category_role";
 
             $cats = explode( ',', $selected_cats );
+
+            //Remove all Previous category map before inserting new categories
+            $this->delete_all_previous_role_category_map( $table_name, $user_role, $site_id );
+
+
             if( ! empty( $cats ) ) {
                 //echo sizeof( $arr_cats );
                 foreach( $cats as $cat ) {
@@ -199,6 +199,20 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
 
             die();
+        }
+
+        /**
+         * @param $table_name
+         * @param $role
+         * @param null $site_id
+         * Remove all category-role map from wp_role_category table based on current role and site_id.
+         */
+        function delete_all_previous_role_category_map( $table_name, $role, $site_id = null ) {
+            $query = "DELETE FROM $table_name WHERE user_role = '" . $role . "' AND  site_id = $site_id";
+            global $wpdb;
+            $wpdb->query(
+                $wpdb->prepare( $query )
+            );
         }
 
         function redirect_to_role_page_after_submission() {
@@ -571,6 +585,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         'hide_empty'    => false,
                         'show_count'    => true,
                         'orderby'       => 'name',
+                        'order'         => 'ASC',
                         'value'         => 'id',
                         'echo'          => false,
                         'walker'        => new WalkerCategoryMediaGridFilter(),
@@ -581,8 +596,9 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                         'taxonomy'      => $this->taxonomy,
                         'hierarchical'  => true,
                         'hide_empty'    => false,
-                        'show_count'    => false,
+                        'show_count'    => true,
                         'orderby'       => 'name',
+                        'order'         => 'ASC',
                         'value'         => 'id',
                         'echo'          => false,
                         'walker'        => new WalkerCategoryMediaGridFilter(),
@@ -598,13 +614,29 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 echo '/* ]]> */';
                 echo '</script>';
 
-                wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-view.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
-                //wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/cmf-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+                //wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-view.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+                wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/cmf-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
 
-                wp_localize_script( 'coolmediafilter-media-views', 'MediaLibraryCategoryFilterOptions', array(
-                    'terms'     => get_terms(
-                        $this->taxonomy, array( 'hide_empty' => false ) ),
-                ) );
+                $cats = $this->get_accessible_categories();
+                global $wp_query;
+
+                $filtered_cats = array(
+                    'hide_empty' => false,
+                    'include'    => $cats,
+                    'orderby'    => 'name',
+                    'order'      => 'ASC',
+                );
+
+                //$terms = get_terms( $this->taxonomy, $filtered_cats );
+
+                wp_localize_script( 'coolmediafilter-media-views', 'MediaLibraryCategoryFilterOptions',
+                    array(
+                        'terms'     => get_terms(
+                            $this->taxonomy,
+                            $filtered_cats
+                        ),
+                    )
+                );
             }
 
             wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.0' );

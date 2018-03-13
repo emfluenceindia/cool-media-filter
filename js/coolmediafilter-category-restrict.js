@@ -1,4 +1,6 @@
 function updateAccess( obj ) {
+    jQuery( obj ).val("Working...");
+    jQuery( obj ).attr("disabled", "disabled");
     var selectedCatIds = "";
     var accessBox =  jQuery( obj ).closest( '.access-box' );
     var roleSlug = jQuery( accessBox ).find(".hidden_role").attr("value");
@@ -7,9 +9,9 @@ function updateAccess( obj ) {
     jQuery( catList ).children().each( function() {
         if( jQuery(this).is(":checked") ) {
         	selectedCatIds += jQuery(this).val() + ",";
-            /*alert( jQuery( obj ).attr("value") );
-            alert( jQuery(this).val() );
-            alert( roleSlug );*/
+            //alert( jQuery( obj ).attr("value") );
+            //alert( jQuery(this).val() );
+            //alert( roleSlug );
         }
     });
 
@@ -20,17 +22,20 @@ function updateAccess( obj ) {
     
     //alert( selectedCatIds );
 
-    jQuery.ajax({
-    	type: 'POST',
-    	url: category_access_ajax.url, //wp_localize_script: 844
-    	data: {
-    		action: 'category_access', //wp_ajax_category_access: 71
-    		user_role: roleSlug,
-    		selected_cats: selectedCatIds,
-            site_id: siteId
-    	},
-    	success: function( result ) {
-    		//alert( result );
-    	}
-    });
+    window.setTimeout(function(){
+        jQuery.ajax({
+            type: 'POST',
+            url: category_access_ajax.url, //wp_localize_script: 844
+            data: {
+                action: 'category_access', //wp_ajax_category_access: 71
+                user_role: roleSlug,
+                selected_cats: selectedCatIds,
+                site_id: siteId
+            },
+            success: function( result ) {
+                jQuery( obj ).val("Update");
+                jQuery( obj ).removeAttr("disabled");
+            }
+        });
+    }, 2000);
 }
