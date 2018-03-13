@@ -74,12 +74,18 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
             add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
 
-            add_action ('pre_get_posts', array( $this, 'load_media_files_by_category_restriction_for_current_user_role' ) );
+            //add_action ('pre_get_posts', array( $this, 'load_media_files_by_category_restriction_for_current_user_role' ) );
+            add_action( 'load-upload.php', array( $this, 'load_media_by_category_access' ) );
+            //add_action( 'admin_init', array( $this, 'load_media_by_category_access' ) );
 
             //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
             add_action( 'admin_post_new_user_role', array( $this, 'save_user_role' ) );
             add_action( 'admin_notices', array( $this, 'maybe_display_notice' ) );
+        }
+
+        function load_media_by_category_access() {
+            add_action( 'pre_get_posts', array( $this, 'load_media_files_by_category_restriction_for_current_user_role' ) );
         }
 
         function load_media_files_by_category_restriction_for_current_user_role() {
@@ -618,7 +624,6 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/cmf-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
 
                 $cats = $this->get_accessible_categories();
-                global $wp_query;
 
                 $filtered_cats = array(
                     'hide_empty' => false,
@@ -626,8 +631,6 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                     'orderby'    => 'name',
                     'order'      => 'ASC',
                 );
-
-                //$terms = get_terms( $this->taxonomy, $filtered_cats );
 
                 wp_localize_script( 'coolmediafilter-media-views', 'MediaLibraryCategoryFilterOptions',
                     array(
