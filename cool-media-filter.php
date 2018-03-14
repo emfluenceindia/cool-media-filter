@@ -127,8 +127,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $cats = $this->get_accessible_categories();
 
             if( $query->is_main_query() ) {
-                if( 'attachment' == $query->get('post_type') ) {
-
+                //if( 'attachment' == $query->get('post_type') ) {
+                if( $this->post_type == $query->get('post_type') ) {
                     if( ! current_user_can( 'administrator' ) ) {
                         $tax_query = array(
                             array(
@@ -550,7 +550,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         function bulk_admin_notice() {
             global $pagenow, $post_type;
 
-            if( $pagenow === 'upload.php' && $post_type == 'attachment' && isset( $_GET['editCategory'] ) ) {
+            //if( $pagenow === 'upload.php' && $post_type == 'attachment' && isset( $_GET['editCategory'] ) ) {
+            if( $pagenow === 'upload.php' && $post_type == $this->post_type && isset( $_GET['editCategory'] ) ) {
                 echo '<div class="updated"><p>' . __('All changes are saved', $this->text_domain) . '</p></div>';
             }
         }
@@ -572,7 +573,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $tax_query = isset( $_REQUEST['query'] ) ? (array)$_REQUEST['query'] : array();
             
             //Get the taxonomies for attachments by names
-            $att_taxonomies = get_object_taxonomies( 'attachment', 'names' );
+            //$att_taxonomies = get_object_taxonomies( 'attachment', 'names' );
+            $att_taxonomies = get_object_taxonomies( $this->post_type, 'names' );
 
             $tax_query = array_intersect_key( $tax_query, array_flip( $att_taxonomies ) );
 
@@ -701,7 +703,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
             $post = get_post( $id, ARRAY_A );
 
-            if( 'attachment' !== $post['post_type'] ) {
+            //if( 'attachment' !== $post['post_type'] ) {
+            if( $this->post_type !== $post['post_type'] ) {
                 wp_send_json_error();
             }
 
