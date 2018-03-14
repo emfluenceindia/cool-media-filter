@@ -80,7 +80,9 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             add_action( 'load-upload.php', array( $this, 'load_media_by_category_access' ) );
             //add_action( 'admin_init', array( $this, 'load_media_by_category_access' ) );
 
-            add_filter( 'ajax_query_attachments_args', array( $this, 'load_media_library_by_category_access' ), 10, 1 );
+
+            add_filter('ajax_query_attachments_args', array($this, 'load_media_library_by_category_access'), 10, 1);
+
 
             //add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
             add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
@@ -89,9 +91,18 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         }
 
         function load_media_library_by_category_access( $query = array() ) {
-            $user_id = get_current_user_id();
-            if( $user_id ) {
-                $query['author'] = $user_id;
+            $cats = $this->get_accessible_categories();
+
+            $tax_query = array(
+                array(
+                    'taxonomy' => 'category',
+                    'field' => 'id',
+                    'terms' => $cats,
+                ),
+            );
+
+            if( !current_user_can( 'update_core' ) ) {
+                $query['tax_query'] = $tax_query;
             }
 
             return $query;
@@ -303,8 +314,6 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $callback_arg =  array( $this, 'update_count' );
         }
 
-        //if_admin()... (all functions below this point will be executed if and only if we are inside admin)
-
         function set_attachment_category( $post_ID ) {
 
             //Attachment already has category.
@@ -327,10 +336,6 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             $user = wp_get_current_user();
 
             if( 'upload.php' === $pagenow ) {
-
-                /*if( in_array( 'administrator', (array) $user->roles ) ) {
-
-                }*/
 
                 //First we find which role current user is in.
                 //Then we find category_ids allowed to be accessed by current role.
@@ -369,7 +374,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         }
 
         /**
-         * We do not need it (for now)
+         *
          */
         function bulk_admin_footer() {
             $role_cats = $this->get_accessible_categories();
@@ -806,39 +811,42 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                 $position
             );
 
-            add_submenu_page(
-                $menu_slug,
-                'Overview',
-                'Overview',
-                'read',
-                'plugin-overview',
-                array( $this, 'overview_markup' ) );
+            if( current_user_can( 'update_core' ) ) {
 
-            add_submenu_page(
-                'user-category-access',
-                'All Roles',
-                'Roles and Permissions',
-                'manage_options',
-                'user-roles',
-                array( $this, 'list_user_roles' ) );
+                add_submenu_page(
+                    $menu_slug,
+                    'Overview',
+                    'Overview',
+                    'read',
+                    'plugin-overview',
+                    array($this, 'overview_markup'));
 
-            add_submenu_page(
-                'user-category-access',
-                'Add New Role',
-                'Add New Role',
-                'manage_options',
-                'new-user-role',
-                array( $this, 'add_user_role_markup' ) );
+                add_submenu_page(
+                    'user-category-access',
+                    'All Roles',
+                    'Roles and Permissions',
+                    'manage_options',
+                    'user-roles',
+                    array($this, 'list_user_roles'));
 
-            add_submenu_page(
-                'user-category-access',
-                'Category Access',
-                'Category Access',
-                'manage_options',
-                'manage-category-access',
-                array( $this, 'restrict_category_access_by_role' ) );
+                add_submenu_page(
+                    'user-category-access',
+                    'Add New Role',
+                    'Add New Role',
+                    'manage_options',
+                    'new-user-role',
+                    array($this, 'add_user_role_markup'));
 
-            remove_submenu_page( $menu_slug, $menu_slug );
+                add_submenu_page(
+                    'user-category-access',
+                    'Category Access',
+                    'Category Access',
+                    'manage_options',
+                    'manage-category-access',
+                    array($this, 'restrict_category_access_by_role'));
+
+                remove_submenu_page($menu_slug, $menu_slug);
+            }
         }
 
         /**
@@ -894,20 +902,20 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
         * Get category_ids accessible by current user role
         */
         function get_accessible_categories() {
+
+            $filter_cats = array();
+
             global $wpdb;
 
             $user_role = $this->get_current_user_role();
             $current_site = $this->get_current_site();
-            
-            $query = "SELECT *
-            FROM wp_category_role WHERE site_id = " . $current_site->id . " AND user_role = '" . $user_role . "'";
-            
-            $result = $wpdb->get_results( $query, OBJECT );
 
-            $filter_cats = array();
+            $query = "SELECT * FROM wp_category_role WHERE site_id = " . $current_site->id . " AND user_role = '" . $user_role . "'";
 
-            foreach( $result as $item ) {
-                array_push( $filter_cats, (int) $item->cat_id );
+            $result = $wpdb->get_results($query, OBJECT);
+
+            foreach ($result as $item) {
+                array_push($filter_cats, (int)$item->cat_id);
             }
 
             return $filter_cats;
@@ -1347,7 +1355,16 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             }
         }
 
-        static function on_plugin_deactivate() {
+        static function deactivate() {
+
+        }
+
+        /**
+         * When uninstalled, remove all role-category map record from wp_role_category table
+         * Delete wp_role_category_table
+         * Reset all existing role capabilities similar to subscriber (?)... well, need a bit more thinking on this!
+         */
+        static function uninstall() {
 
         }
 
@@ -1362,8 +1379,10 @@ if( class_exists( 'CoolMediaFilter') ) {
 require_once plugin_dir_path(__FILE__) . 'inc/plugin-actions.php';
 
 //activate
-//register_activation_hook( __FILE__, array( 'PluginAction', 'activate' ) );
 register_activation_hook( __FILE__, array( 'CoolMediaFilter', 'activate' ) );
 
 //deactivate
-register_deactivation_hook( __FILE__, array( 'CoolMediaFilter', 'on_plugin_deactivate' ) );
+register_deactivation_hook( __FILE__, array( 'CoolMediaFilter', 'deactivate' ) );
+
+//uninstall
+register_uninstall_hook( __FILE__, array( 'CoolMediaFilter', 'uninstall' ) );
