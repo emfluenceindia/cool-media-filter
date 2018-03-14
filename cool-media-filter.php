@@ -46,7 +46,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
         function register()
         {
-            add_action( 'init', array( $this, 'register_taxonomy' ) );
+            add_action( 'init', array( $this, 'register_taxonomy_for_post_type' ), 0 );
             add_action( 'init', array( $this, 'change_default_update_count_callback' ), 100 );
 
             add_filter( 'shortcode_atts_gallery', array( $this, 'register_gallery_shortcode' ) );
@@ -64,8 +64,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
                 add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
 
-                /*add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
-                add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );*/
+                add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment') , 0 );
+                add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
 
                 //add_action( 'admin_footer', array( $this, 'add_media_access_update_script' ) );
 
@@ -255,7 +255,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
             require_once plugin_dir_path() . 'inc/gallery-shortcode.php';
         }
 
-        function register_taxonomy() {
+        function register_taxonomy_for_post_type() {
             //$this->taxonomy = apply_filters(  'cool_media_taxonomy', $this->taxonomy );
 
             if( taxonomy_exists( $this->taxonomy ) ) {
