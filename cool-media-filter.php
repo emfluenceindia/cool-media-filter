@@ -95,7 +95,7 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
 
             $tax_query = array(
                 array(
-                    'taxonomy' => 'category',
+                    'taxonomy' => $this->taxonomy,
                     'field' => 'id',
                     'terms' => $cats,
                 ),
@@ -132,7 +132,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
                     if( ! current_user_can( 'administrator' ) ) {
                         $tax_query = array(
                             array(
-                                'taxonomy' => 'category',
+                                //'taxonomy' => 'category',
+                                'taxonomy' => $this->taxonomy,
                                 'field' => 'id',
                                 'terms' => $cats,
                                 'operator' => 'IN',
@@ -1325,7 +1326,8 @@ if( !class_exists( 'CoolMediaFilter' ) ) {
          */
         function get_all_categories() {
             $args = array(
-                'taxonomy'      => 'category',
+                //'taxonomy'      => 'category',
+                'taxonomy'      => $this->taxonomy,
                 'hide_empty'    => false,
                 'orderby'       => 'name',
                 'order'         => 'ASC',
