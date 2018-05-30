@@ -4,7 +4,7 @@
  * @package: CoolMediaFilter
  */
 
-class WalkerMediaTaxonomyCheckList extends Walker {
+class CoolMediaFilterWalkerMediaTaxonomyCheckList extends Walker {
     var $tree_type = 'category';
     var $db_fields = array(
         'parent' => 'parent',

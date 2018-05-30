@@ -4,7 +4,7 @@
  * @package: CoolMediaFilter
  */
 
-class PluginAction {
+class CoolMediaFilterPluginAction {
     public static function activate() {
         flush_rewrite_rules();
     }

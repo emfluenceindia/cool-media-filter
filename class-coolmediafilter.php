@@ -33,15 +33,39 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 	 * Class CoolMediaFilter
 	 */
 	class CoolMediaFilter {
+
+		/**
+		 * Plugin Name
+		 *
+		 * @var string
+		 */
 		public $plugin;
+
+		/**
+		 * Taxonomy Name
+		 *
+		 * @var string
+		 */
 		public $taxonomy;
+
+		/**
+		 * Post Type Name
+		 *
+		 * @var string
+		 */
 		public $post_type;
+
+		/**
+		 * Text Domain cool-media-filter
+		 *
+		 * @var string
+		 */
 		public $text_domain;
 
 		/**
 		 * CoolMediaFilter constructor.
 		 */
-		function __construct() {
+		public function __construct() {
 			$this->plugin      = plugin_basename( __FILE__ );
 			$this->taxonomy    = 'category';
 			$this->post_type   = 'attachment';
@@ -49,49 +73,54 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			$this->taxonomy    = apply_filters( 'cool_media_taxonomy', $this->taxonomy );
 		}
 
-		function register() {
-			add_action( 'init', array( $this, 'register_taxonomy_for_post_type' ), 0 );
-			add_action( 'init', array( $this, 'change_default_update_count_callback' ), 100 );
+		/**
+		 * Series of functions are hooked into Actions and Filters.
+		 */
+		public function cmf_register() {
+			add_action( 'init', array( $this, 'cmf_register_taxonomy_for_post_type' ), 0 );
+			add_action( 'init', array( $this, 'cmf_change_default_update_count_callback' ), 100 );
 
-			add_filter( 'shortcode_atts_gallery', array( $this, 'register_gallery_shortcode' ) );
+			add_filter( 'shortcode_atts_gallery', array( $this, 'cmf_register_gallery_shortcode' ) );
 
 			if ( is_admin() ) {
-				add_action( 'add_attachment', array( $this, 'set_attachment_category' ) );
-				add_action( 'edit_attachment', array( $this, 'set_attachment_category' ) );
+				add_action( 'add_attachment', array( $this, 'cmf_set_attachment_category' ) );
+				add_action( 'edit_attachment', array( $this, 'cmf_set_attachment_category' ) );
 
-				add_action( 'restrict_manage_posts', array( $this, 'add_category_filter' ) );
-				add_action( 'admin_footer-upload.php', array( $this, 'bulk_admin_footer' ) );
-				add_action( 'load-upload.php', array( $this, 'bulk_admin_action' ) );
-				add_action( 'admin_notices', array( $this, 'bulk_admin_notice' ) );
-				add_action( "plugin_action_links_$this->plugin", array( $this, 'action_links' ) );
-				add_action( 'ajax_query_attachments_args', array( $this, 'ajax_attachment_query_builder' ) );
+				add_action( 'restrict_manage_posts', array( $this, 'cmf_add_category_filter' ) );
+				add_action( 'admin_footer-upload.php', array( $this, 'cmf_bulk_admin_footer' ) );
+				add_action( 'load-upload.php', array( $this, 'cmf_bulk_admin_action' ) );
+				add_action( 'admin_notices', array( $this, 'cmf_bulk_admin_notice' ) );
+				add_action( "plugin_action_links_$this->plugin", array( $this, 'cmf_action_links' ) );
+				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
 
-				add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_media_action' ) );
+				add_action( 'admin_enqueue_scripts', array( $this, 'cmf_enqueue_media_action' ) );
 
-				add_action( 'wp_ajax_save-attachment-compat', array( $this, 'save_attachment' ), 0 );
-				add_action( 'attachment_fields_to_edit', array( $this, 'attachment_editable_fields' ) );
+				add_action( 'wp_ajax_save-attachment-compat', array( $this, 'cmf_save_attachment' ), 0 );
+				add_action( 'attachment_fields_to_edit', array( $this, 'cmf_attachment_editable_fields' ) );
 
-				// add_action( 'admin_footer', array( $this, 'add_media_access_update_script' ) );
-				add_action( 'admin_enqueue_scripts', array( $this, 'localize_scripts' ) );
-				add_action( 'wp_ajax_category_access', array( $this, 'update_role_category_access' ) );
-				add_action( 'wp_ajax_role_permission', array( $this, 'update_caps_by_role' ) );
+				add_action( 'admin_enqueue_scripts', array( $this, 'cmf_localize_scripts' ) );
+				add_action( 'wp_ajax_category_access', array( $this, 'cmf_update_role_category_access' ) );
+				add_action( 'wp_ajax_role_permission', array( $this, 'cmf_update_caps_by_role' ) );
 			}
 
-			add_action( 'admin_init', array( $this, 'restrict_category_item_access_by_user_role' ) );
+			add_action( 'admin_init', array( $this, 'cmf_restrict_category_item_access_by_user_role' ) );
 
-			// add_action ('pre_get_posts', array( $this, 'load_media_files_by_category_restriction_for_current_user_role' ) );
-			add_action( 'load-upload.php', array( $this, 'load_media_by_category_access' ) );
-			// add_action( 'admin_init', array( $this, 'load_media_by_category_access' ) );
-			add_filter( 'ajax_query_attachments_args', array( $this, 'load_media_library_by_category_access' ), 10, 1 );
+			add_action( 'load-upload.php', array( $this, 'cmf_load_media_by_category_access' ) );
+			add_filter( 'ajax_query_attachments_args', array( $this, 'cmf_load_media_library_by_category_access' ), 10, 1 );
 
-			// add_action( 'admin_menu', array( $this, 'category_access_option_page' ) );
-			add_action( 'admin_menu', array( $this, 'create_plugin_admin_menu' ) );
-			add_action( 'admin_post_new_user_role', array( $this, 'save_user_role' ) );
-			add_action( 'admin_notices', array( $this, 'maybe_display_notice' ) );
+			add_action( 'admin_menu', array( $this, 'cmf_create_plugin_admin_menu' ) );
+			add_action( 'admin_post_new_user_role', array( $this, 'cmf_save_user_role' ) );
+			add_action( 'admin_notices', array( $this, 'cmf_maybe_display_notice' ) );
 		}
 
-		function load_media_library_by_category_access( $query = array() ) {
-			$cats = $this->get_accessible_categories();
+		/**
+		 * Description: Filters out and lists media files in grid view by accessible categories of current user's role.
+		 *
+		 * @param array $query accepts array. default empty array.
+		 * @return array
+		 */
+		public function cmf_load_media_library_by_category_access( $query = array() ) {
+			$cats = $this->cmf_get_accessible_categories();
 
 			$tax_query = array(
 				array(
@@ -108,31 +137,40 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			return $query;
 		}
 
-		function load_media_by_category_access() {
-			add_action( 'pre_get_posts', array( $this, 'load_media_files_by_category_restriction_for_current_user_role' ) );
+		/**
+		 * Description: Loads media files by accessible categories.
+		 */
+		public function cmf_load_media_by_category_access() {
+			add_action( 'pre_get_posts', array( $this, 'cmf_load_media_files_by_category_restriction_for_current_user_role' ) );
 		}
 
-		function load_media_files_by_category_restriction_for_current_user_role() {
+		/**
+		 * Description: Loads media files by accessible categories.
+		 */
+		public function cmf_load_media_files_by_category_restriction_for_current_user_role() {
 			global $wp_query;
-			$this->load_media_by_role( $wp_query );
+			$this->cmf_load_media_by_role( $wp_query );
 
 		}
 
-		function load_media_by_role( $query ) {
+		/**
+		 * Description: Loads media by role.
+		 *
+		 * @param string $query accepts query object.
+		 */
+		public function cmf_load_media_by_role( $query ) {
 			if ( ! is_admin() ) {
 				return;
 			}
 
 			// Get array of categories accessible by current user role to pass in $tax_query.
-			$cats = $this->get_accessible_categories();
+			$cats = $this->cmf_get_accessible_categories();
 
 			if ( $query->is_main_query() ) {
-				// if( 'attachment' == $query->get('post_type') ) {
-				if ( $this->post_type == $query->get( 'post_type' ) ) {
+				if ( $this->post_type === $query->get( 'post_type' ) ) {
 					if ( ! current_user_can( 'administrator' ) ) {
 						$tax_query = array(
 							array(
-								// 'taxonomy' => 'category',
 								'taxonomy' => $this->taxonomy,
 								'field'    => 'id',
 								'terms'    => $cats,
@@ -147,13 +185,16 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 		}
 
-		function localize_scripts() {
+		/**
+		 * Script localization.
+		 */
+		public function cmf_localize_scripts() {
 			wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
 
 			wp_localize_script(
 				'role_category_access', 'category_access_ajax', array(
 					'url'   => admin_url( 'admin-ajax.php' ),
-					'nonce' => wp_create_nonce( 'role_access_nonce' ),
+					'nonce' => wp_create_nonce( 'cmf_role_access_nonce' ),
 				)
 			);
 
@@ -162,7 +203,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			wp_localize_script(
 				'update_role_permission', 'role_permission_ajax', array(
 					'url'   => admin_url( 'admin-ajax.php' ),
-					'nonce' => wp_create_nonce( 'update_role_permissions_nonce' ),
+					'nonce' => wp_create_nonce( 'cmf_update_role_permissions_nonce' ),
 				)
 			);
 		}
@@ -171,52 +212,65 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Remove all existing caps from current role
 		 * Add new caps to this role
 		 */
-		function update_caps_by_role() {
-			$role_key = isset( $_POST['role_key'] ) ? $_POST['role_key'] : 'Not defined';
-			$new_caps = isset( $_POST['new_caps'] ) ? $_POST['new_caps'] : '';
+		public function cmf_update_caps_by_role() {
+			$role_key = isset( $_POST['role_key'] ) ? sanitize_text_field( wp_unslash( $_POST['role_key'] ) ) : 'Not defined';
+			$new_caps = isset( $_POST['new_caps'] ) ? sanitize_text_field( wp_unslash( $_POST['new_caps'] ) ) : '';
 
-			// var_dump( $role_key );
 			$old_caps = get_role( $role_key )->capabilities;
-			var_dump( $old_caps );
 
 			global $wp_roles;
 
-			// Remove caps
+			// Remove caps.
 			foreach ( $old_caps as $old_cap_key => $old_cap_value ) {
 				$wp_roles->remove_cap( $role_key, $old_cap_key );
 			}
 
-			// Add new caps
+			// Add new caps.
 			$new_caps_array = explode( ',', $new_caps );
 
 			foreach ( $new_caps_array as $new_cap ) {
 				$wp_roles->add_cap( $role_key, $new_cap );
 			}
 
-			die;
+			die();
 		}
 
-		function update_role_category_access() {
-			/*
-			$update_nonce = $_POST[ 'role_access_nonce' ];
-			if( ! wp_verify_nonce( $update_nonce, 'role_access_nonce' ) ) {
-				die();
-			}*/
-			$user_role     = isset( $_POST['user_role'] ) ? $_POST['user_role'] : 'Not defined';
-			$selected_cats = isset( $_POST['selected_cats'] ) ? $_POST['selected_cats'] : 'None selected';
-			$site_id       = isset( $_POST['site_id'] ) ? $_POST['site_id'] : 'Undefined';
+		/**
+		 * Update role-category access.
+		 */
+		public function cmf_update_role_category_access() {
+			$user_role     = 'Not defined';
+			$selected_cats = 'None selected';
+			$site_id       = 'Undefined';
 
-			// We have all the information back from AJAX. Now we are good to save them in our map table
+			if ( isset( $_POST['user_role'] ) && '' !== $_POST['user_role'] ) {
+				$user_role = sanitize_text_field( wp_unslash( $_POST['user_role'] ) );
+			}
+
+			if ( isset( $_POST['selected_cats'] ) && '' !== $_POST['selected_cats'] ) {
+				$selected_cats = sanitize_text_field( wp_unslash( $_POST['selected_cats'] ) );
+			}
+
+			if ( isset( $_POST['site_id'] ) && '' !== $_POST['site_id'] ) {
+				$site_id = sanitize_text_field( wp_unslash( $_POST['site_id'] ) );
+			}
+
+			// We have all the information back from AJAX. Now we are good to save them in our map table.
 			global $wpdb;
-			$table_name = explode( '_', $wpdb->prefix )[0] . '_' . 'category_role';
+
+			/**
+			 * Table name
+			 *
+			 * @var string
+			 */
+			$table_name = explode( '_', $wpdb->prefix )[0] . '_category_role';
 
 			$cats = explode( ',', $selected_cats );
 
-			// Remove all Previous category map before inserting new categories
-			$this->delete_all_previous_role_category_map( $table_name, $user_role, $site_id );
+			// Remove all Previous category map before inserting new categories.
+			$this->cmf_delete_all_previous_role_category_map( $table_name, $user_role, $site_id );
 
 			if ( ! empty( $cats ) ) {
-				// echo sizeof( $arr_cats );
 				foreach ( $cats as $cat ) {
 					$wpdb->insert(
 						$table_name,
@@ -238,48 +292,57 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
-		 * @param $table_name
-		 * @param $role
-		 * @param null       $site_id
-		 * Remove all category-role map from wp_role_category table based on current role and site_id.
+		 * Description: Remove all category-role map from wp_role_category table based on current role and site_id.
+		 *
+		 * @param string $table_name accepts a table name. required.
+		 * @param string $role       accepts role name. required.
+		 * @param null   $site_id    accepts site_id as integer. optional. default is null.
 		 */
-		function delete_all_previous_role_category_map( $table_name, $role, $site_id = null ) {
+		public function cmf_delete_all_previous_role_category_map( $table_name, $role, $site_id = null ) {
 			$query = "DELETE FROM $table_name WHERE user_role = '" . $role . "' AND  site_id = $site_id";
 			global $wpdb;
-			$wpdb->query(
-				$wpdb->prepare( $query )
-			);
+
+			$wpdb->query( $wpdb->prepare( $query ) ); // WPCS: unprepared SQL OK.
 		}
 
-		function redirect_to_role_page_after_submission() {
-			// wp_safe_redirect( admin_url() . 'admin.php?page=new-user-role' );
-			wp_redirect( admin_url( 'admin.php?page=new-user-role' ) );
+		/**
+		 * Redirection.
+		 */
+		public function cmf_redirect_to_role_page_after_submission() {
+			wp_safe_redirect( admin_url( 'admin.php?page=new-user-role' ) );
 		}
 
-		function register_gallery_shortcode() {
-			require_once plugin_dir_path() . 'inc/gallery-shortcode.php';
+		/**
+		 * Shortcode registration.
+		 */
+		public function cmf_register_gallery_shortcode() {
+			require_once plugin_dir_path() . 'inc/coolmediafilter-gallery-shortcode.php';
 		}
 
-		function register_taxonomy_for_post_type() {
-			// $this->taxonomy = apply_filters(  'cool_media_taxonomy', $this->taxonomy );
+		/**
+		 * Register taxonomy.
+		 */
+		public function cmf_register_taxonomy_for_post_type() {
 			if ( taxonomy_exists( $this->taxonomy ) ) {
 				register_taxonomy_for_object_type( $this->taxonomy, $this->post_type );
 			} else {
 				$args = array(
 					'hierarchical'          => true,
 					'show_admin_column'     => true,
-					'update_count_callback' => array( $this, 'update_count' ),
+					'update_count_callback' => array( $this, 'cmf_update_count' ),
 				);
 
 				register_taxonomy( $this->taxonomy, array( $this->post_type ), $args );
 			}
 		}
 
-		function update_count() {
+		/**
+		 * Description: updates item count for each taxonomy.
+		 */
+		public function cmf_update_count() {
 			global $wpdb;
 
-			// $this->taxonomy = apply_filters(  'cool_media_taxonomy', $this->taxonomy );
-			// query string with placeholders
+			// query string with placeholders.
 			$str_query = "SELECT term_taxonomy_id, MAX(total) AS total FROM ((
                         SELECT tt.term_taxonomy_id, COUNT(*) AS total FROM $wpdb->term_relationships tr,
                         $wpdb->term_taxonomy tt WHERE tr.term_taxonomy_id = tt.term_taxonomy_id AND tt.taxonomy = %s GROUP BY tt.term_taxonomy_id
@@ -288,10 +351,16 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
                         )) AS unioncount GROUP BY term_taxonomy_id";
 
 			// prepare actual query by replacing placeholders with $default_taxonomy value.
-			$query = $wpdb->prepare( $str_query, $this->taxonomy, $this->taxonomy );
+			$query = $wpdb->prepare( $str_query, $this->taxonomy, $this->taxonomy ); // WPCS: unprepared SQL OK.
 
-			// run query to return results from database
-			$rows_count = $wpdb->get_results( $query );
+			// Try to get from cache.
+			$rows_count = wp_cache_get( 'rows_count' );
+
+			if ( false === $rows_count ) {
+				// Run query to return results from database.
+				$rows_count = $wpdb->get_results( $query ); // WPCS: unprepared SQL OK.
+				wp_cache_set( 'rows_count', $rows_count );
+			}
 
 			/**
 			 * Update counts of each term_taxonomy_id in wp_term_taxonomy table
@@ -305,7 +374,10 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 		}
 
-		function change_default_update_count_callback() {
+		/**
+		 * Callback function for changing default update count.
+		 */
+		public function cmf_change_default_update_count_callback() {
 			global $wp_taxonomies;
 
 			if ( 'category' === $this->taxonomy ) {
@@ -316,37 +388,44 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 			$callback_arg = &$wp_taxonomies['category']->update_count_callback;
 
-			$callback_arg = array( $this, 'update_count' );
+			$callback_arg = array( $this, 'cmf_update_count' );
 		}
 
-		function set_attachment_category( $post_ID ) {
+		/**
+		 * Description: Set attachment category.
+		 *
+		 * @param int $post_ID accepts post_id. required.
+		 */
+		public function cmf_set_attachment_category( $post_ID ) {
 
 			// Attachment already has category.
 			if ( wp_get_object_terms( $post_ID, $this->taxonomy ) ) {
 				return;
 			}
 
-			// Get the default one
+			// Get the default one.
 			$post_category = array( get_option( 'default_category' ) );
 
-			// Set category
+			// Set category.
 			if ( $post_category ) {
 				wp_set_post_categories( $post_ID, $post_category );
 			}
 		}
 
-		function add_category_filter() {
-			require_once plugin_dir_path( __FILE__ ) . 'classes/class-walker-category-filter.php';
+		/**
+		 * Description: Add category filter.
+		 */
+		public function cmf_add_category_filter() {
+			require_once plugin_dir_path( __FILE__ ) . 'classes/class-coolmediafilter-walker-category-filter.php';
 
 			global $pagenow;
-			$user = wp_get_current_user();
 
 			if ( 'upload.php' === $pagenow ) {
 
 				// First we find which role current user is in.
 				// Then we find category_ids allowed to be accessed by current role.
 				// All other category_ids will go into exclude array.
-				$role_cats = $this->get_accessible_categories();
+				$role_cats = $this->cmf_get_accessible_categories();
 
 				if ( 'category' !== $this->taxonomy ) {
 					$options = array(
@@ -357,7 +436,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						'hierarchical'    => true,
 						'orderby'         => 'name',
 						'show_count'      => true,
-						'walker'          => new WalkerCategoryFilter(),
+						'walker'          => new CoolMediaFilterWalkerCategoryFilter(),
 						'value'           => 'slug',
 					);
 				} else {
@@ -368,7 +447,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						'hierarchical'    => true,
 						'orderby'         => 'name',
 						'show_count'      => true,
-						'walker'          => new WalkerCategoryFilter(),
+						'walker'          => new CoolMediaFilterWalkerCategoryFilter(),
 						'value'           => 'id',
 						'include'         => $role_cats,
 					);
@@ -379,10 +458,10 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
-		 *
+		 * Description: Prepare dropdown values.
 		 */
-		function bulk_admin_footer() {
-			$role_cats = $this->get_accessible_categories();
+		public function cmf_bulk_admin_footer() {
+			$role_cats = $this->cmf_get_accessible_categories();
 
 			$args = array(
 				'hide_empty' => false,
@@ -396,11 +475,11 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				echo '<script type="text/javascript">';
 				echo 'jQuery(window).load( function() {';
 
-				echo 'jQuery(\'<optgroup style="color: #336600;" id="coolmediafilter_optgroup1" label="' . html_entity_decode( __( 'Attach category &raquo;', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
-				echo 'jQuery(\'<optgroup style="color: #336600;" id="coolmediafilter_optgroup2" label="' . html_entity_decode( __( 'Attach category &raquo;', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
+				echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup1" label="' . html_entity_decode( __( 'Attach to:', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+				echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup2" label="' . html_entity_decode( __( 'Attach to:', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
 
 				/**
-				 * Categories under ADD group
+				 * Categories under ADD group.
 				 */
 				foreach ( $terms as $term ) {
 					$str_add_option_item = esc_js( __( '- ', 'cool-media-filter' ) . $term->name );
@@ -409,8 +488,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					echo "jQuery('<option style=\"color: #000000;\">').val('coolmediafilter_add_" . $term->term_taxonomy_id . "').text('" . $str_add_option_item . "').appendTo('#coolmediafilter_optgroup2');";
 				}
 
-				echo 'jQuery(\'<optgroup style="color: #ff0000;" id="coolmediafilter_optgroup3" label="' . html_entity_decode( __( 'Detach category &raquo;', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
-				echo 'jQuery(\'<optgroup style="color: #ff0000;" id="coolmediafilter_optgroup4" label="' . html_entity_decode( __( 'Detach category &raquo;', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
+				echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup3" label="' . html_entity_decode( __( 'Detach from:', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+				echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup4" label="' . html_entity_decode( __( 'Detach from:', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
 
 				/**
 				 * Categories under REMOVE group
@@ -426,8 +505,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 				if ( $term_count > 1 ) {
 
-					echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup5" label="' . html_entity_decode( __( 'Bulk Action &raquo;', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
-					echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup6" label="' . html_entity_decode( __( 'Bulk Action &raquo;', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
+					echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup5" label="' . html_entity_decode( __( 'Bulk action:', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action\']");';
+					echo 'jQuery(\'<optgroup id="coolmediafilter_optgroup6" label="' . html_entity_decode( __( 'Bulk action:', 'cool-media-filter' ), ENT_QUOTES, 'UTF-8' ) . '">\').appendTo("select[name=\'action2\']");';
 
 					/**
 					 * Remove all categories
@@ -437,32 +516,35 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					echo "jQuery('<option>').val('coolmediafilter_remove_0').text('" . esc_js( __( 'Remove all categories', 'cool-media-filter' ) ) . "').appendTo('#coolmediafilter_optgroup6');";
 				}
 
-				echo '})'; // anonymous function definition ends
+				echo '})'; // anonymous function definition ends.
 
 				echo '</script>';
 			}
 		}
 
-		function bulk_admin_action() {
+		/**
+		 * Bulk admin action.
+		 */
+		public function cmf_bulk_admin_action() {
 			global $wpdb;
 
-			// REQUEST['action'] is not set stop execution
+			// REQUEST['action'] is not set stop execution.
 			if ( ! isset( $_REQUEST['action'] ) ) {
 				return;
 			}
 
-			// Check if 'action' is a category. If not stop execution
-			$action = ( -1 !== $_REQUEST['action'] ) ? $_REQUEST['action'] : $_REQUEST['action2'];
+			// Check if 'action' is a category. If not stop execution.
+			$action = ( -1 !== $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : sanitize_text_field( wp_unslash( $_REQUEST['action2'] ) );
 			if ( substr( $action, 0, 16 ) !== 'coolmediafilter_' ) { // need to check the correct position.
 				return;
 			}
 
-			// Do a security check
+			// Do a security check.
 			check_admin_referer( 'bulk-media' );
 
 			// If Ids are not submitted stop execution.
 			if ( isset( $_REQUEST['media'] ) ) {
-				$post_ids = array_map( 'intval', $_REQUEST['media'] );
+				$post_ids = array_map( 'intval', sanitize_text_field( wp_unslash( $_REQUEST['media'] ) ) );
 			}
 
 			if ( empty( $post_ids ) ) {
@@ -471,35 +553,35 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 			$safe_sendback_url = admin_url( 'upload.php?editCategory=1' );
 
-			// Remember page number for safe redirect
-			// If no current page is set, default to 0
+			// Remember page number for safe redirect.
+			// If no current page is set, default to 0.
 			$current_page_number = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0;
 			$safe_sendback_url   = add_query_arg( 'paged', $current_page_number, $safe_sendback_url );
 
 			// Remember orderby settings for using when redirected.
 			if ( isset( $_REQUEST['orderby'] ) ) {
-				$current_orderby   = $_REQUEST['orderby'];
+				$current_orderby   = sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) );
 				$safe_sendback_url = esc_url( add_query_arg( 'orderby', $current_orderby, $safe_sendback_url ) );
 			}
 
 			// Remeber current order (ASC or DESC) settings for using when redirected.
 			if ( isset( $_REQUEST['order'] ) ) {
-				$current_display_order = $_REQUEST['order'];
+				$current_display_order = sanitize_text_field( wp_unslash( $_REQUEST['order'] ) );
 				$safe_sendback_url     = esc_url( add_query_arg( 'order', $current_display_order, $safe_sendback_url ) );
 			}
 
-			// Remember author
+			// Remember author.
 			if ( isset( $_REQUEST['author'] ) ) {
-				$current_author    = $_REQUEST['author'];
+				$current_author    = sanitize_text_field( wp_unslash( $_REQUEST['author'] ) );
 				$safe_sendback_url = esc_url( add_query_arg( 'author', $current_author, $safe_sendback_url ) );
 			}
 
-			// Start CRUD functionality
+			// Start CRUD functionality.
 			foreach ( $post_ids as $post_id ) {
 				if ( is_numeric( str_replace( 'coolmediafilter_add_', '', $action ) ) ) {
 					$category_id = str_replace( 'coolmediafilter_add_', '', $action );
 
-					// Run Insert or Update category routine
+					// Run Insert or Update category routine.
 					$wpdb->replace(
 						$wpdb->term_relationships,
 						array(
@@ -514,8 +596,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				} elseif ( is_numeric( str_replace( 'coolmediafilter_remove_', '', $action ) ) ) {
 					$category_id = str_replace( 'coolmediafilter_remove_', '', $action );
 
-					if ( 0 == $category_id ) {
-						// Remove all category associations from all selected media
+					if ( 0 === $category_id ) {
+						// Remove all category associations from all selected media.
 						$wpdb->delete(
 							$wpdb->term_relationships,
 							array(
@@ -526,7 +608,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 							)
 						);
 					} else {
-						// Remove selected category from selected media
+						// Remove selected category from selected media.
 						$wpdb->delete(
 							$wpdb->term_relationships,
 							array(
@@ -542,44 +624,49 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				}
 			}
 
-			$this->update_count();
+			$this->cmf_update_count();
 			wp_safe_redirect( $safe_sendback_url );
 			exit();
 		}
 
 		/** Display update message after category edit */
-		function bulk_admin_notice() {
+		public function cmf_bulk_admin_notice() {
 			global $pagenow, $post_type;
 
-			// if( $pagenow === 'upload.php' && $post_type == 'attachment' && isset( $_GET['editCategory'] ) ) {
-			if ( 'upload.php' === $pagenow && $post_type == $this->post_type && isset( $_GET['editCategory'] ) ) {
-				echo '<div class="updated"><p>' . __( 'All changes are saved', 'cool-media-filter' ) . '</p></div>';
+			if ( 'upload.php' === $pagenow && $post_type === $this->post_type && isset( $_GET['editCategory'] ) ) {
+				echo esc_html( '<div class="updated"><p>' . __( 'All changes are saved', 'cool-media-filter' ) . '</p></div>' );
 			}
 		}
 
-		function action_links( $links ) {
-			// To be implemented
+		/**
+		 * To be implemented.
+		 *
+		 * @param array $links accepts an array of string values.
+		 */
+		public function cmf_action_links( $links ) {
+			// To be implemented.
 		}
 
 		/**
-		 * @param array $query
-		 * @return array $query
-		 * Changing categories in gridview
+		 * Attachment Query Builder.
+		 *
+		 * @param array $query Optional.
+		 * @return array $query Returns query object.
+		 * Changing categories in gridview.
 		 * Gets the original query via $query argument
 		 * We find intersecting keys in $query array and a taxonomy query
 		 * Then merge the those keys into main $query array
 		 */
-		function ajax_attachment_query_builder( $query = array() ) {
-			// We grab the original query which is already filtered by WordPress
+		public function cmf_ajax_attachment_query_builder( $query = array() ) {
+			// We grab the original query which is already filtered by WordPress.
 			$tax_query = isset( $_REQUEST['query'] ) ? (array) $_REQUEST['query'] : array();
 
-			// Get the taxonomies for attachments by names
-			// $att_taxonomies = get_object_taxonomies( 'attachment', 'names' );
+			// Get the taxonomies for attachments by names.
 			$att_taxonomies = get_object_taxonomies( $this->post_type, 'names' );
 
 			$tax_query = array_intersect_key( $tax_query, array_flip( $att_taxonomies ) );
 
-			// Merge $tax_query into actual filtered WordPress query
+			// Merge $tax_query into actual filtered WordPress query.
 			array_merge( $query, $tax_query );
 
 			$query['tax_query'] = array( 'relation' => 'AND' );
@@ -604,8 +691,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 * Adds category dropdown in grid view mode
 		 */
-		function enqueue_media_action() {
-			require_once plugin_dir_path( __FILE__ ) . 'classes/class-walker-category-mediagrid-filter.php';
+		function cmf_enqueue_media_action() {
+			require_once plugin_dir_path( __FILE__ ) . 'classes/class-coolmediafilter-walker-category-mediagrid-filter.php';
 
 			global $pagenow;
 
@@ -620,7 +707,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						'order'        => 'ASC',
 						'value'        => 'id',
 						'echo'         => false,
-						'walker'       => new WalkerCategoryMediaGridFilter(),
+						'walker'       => new CoolMediaFilterWalkerCategoryMediaGridFilter(),
 
 					);
 				} else {
@@ -633,7 +720,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						'order'        => 'ASC',
 						'value'        => 'id',
 						'echo'         => false,
-						'walker'       => new WalkerCategoryMediaGridFilter(),
+						'walker'       => new CoolMediaFilterWalkerCategoryMediaGridFilter(),
 					);
 				}
 
@@ -649,7 +736,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				// wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-view.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
 				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/cmf-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
 
-				$cats = $this->get_accessible_categories();
+				$cats = $this->cmf_get_accessible_categories();
 
 				$filtered_cats = array(
 					'hide_empty' => false,
@@ -682,7 +769,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * 5. if post type of current post is not 'attachment'
 		 */
 
-		function save_attachment() {
+		function cmf_save_attachment() {
 			if ( ! isset( $_REQUEST['id'] ) ) {
 				wp_send_json_error();
 			}
@@ -732,6 +819,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 
 			if ( ! $attachment = wp_prepare_attachment_for_js( $id ) ) {
+				// if ( wp_prepare_attachment_for_js( $id ) != $attachment ) {
 				wp_send_json_error();
 			}
 
@@ -744,7 +832,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * @param $post
 		 * @return mixed
 		 */
-		function attachment_editable_fields( $form_fields, $post ) {
+		function cmf_attachment_editable_fields( $form_fields, $post ) {
 
 			foreach ( get_attachment_taxonomies( $post->ID ) as $obj_taxonomy ) {
 				$terms = get_object_term_cache( $post->ID, $obj_taxonomy );
@@ -780,7 +868,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						$post->ID, array(
 							'taxonomy'      => $obj_taxonomy,
 							'checked_ontop' => false,
-							'walker'        => new WalkerMediaTaxonomyCheckList(),
+							'walker'        => new CoolMediaFilterWalkerMediaTaxonomyCheckList(),
 						)
 					);
 
@@ -805,12 +893,12 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 *
 		 */
-		function create_plugin_admin_menu() {
+		function cmf_create_plugin_admin_menu() {
 			$page_title = 'Cool Media Filter';
 			$menu_title = 'Cool Media Filter';
 			$capability = 'manage_options';
 			$menu_slug  = 'user-category-access';
-			$callback   = array( $this, 'plugin_options_page' );
+			$callback   = array( $this, 'cmf_plugin_options_page' );
 			$menu_icon  = 'dashicons-filter';
 			$position   = 4;
 
@@ -832,7 +920,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					'Overview',
 					'read',
 					'plugin-overview',
-					array( $this, 'overview_markup' )
+					array( $this, 'cmf_overview_markup' )
 				);
 
 				add_submenu_page(
@@ -850,7 +938,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					'Add New Role',
 					'manage_options',
 					'new-user-role',
-					array( $this, 'add_user_role_markup' )
+					array( $this, 'cmf_add_user_role_markup' )
 				);
 
 				add_submenu_page(
@@ -859,7 +947,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					'Category Access',
 					'manage_options',
 					'manage-category-access',
-					array( $this, 'restrict_category_access_by_role' )
+					array( $this, 'cmf_restrict_category_access_by_role' )
 				);
 
 				remove_submenu_page( $menu_slug, $menu_slug );
@@ -871,7 +959,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Purpose: Display categories with ability to select user roles for accessing category items
 		 */
 
-		function restrict_category_item_access_by_user_role() {
+		function cmf_restrict_category_item_access_by_user_role() {
 			add_option( 'category_item_access_by_role', 'Category Access By Role' );
 			register_setting( 'category_item_access', 'category_item_access_by_role', 'category_access_callback' );
 		}
@@ -880,14 +968,14 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Create option page for settings
 		 * Not required ?
 		 */
-		function category_access_option_page() {
-			add_options_page( 'Category Access', 'Restrict access to category items', 'manage_options', 'user-category-access', array( $this, 'plugin_options_page' ) );
+		function cmf_category_access_option_page() {
+			add_options_page( 'Category Access', 'Restrict access to category items', 'manage_options', 'user-category-access', array( $this, 'cmf_plugin_options_page' ) );
 		}
 
 		/**
 		 *
 		 */
-		function plugin_options_page() {
+		function cmf_plugin_options_page() {
 			echo '<div class="wrap"><h1>Cool Media Filter</h1></div>';
 		}
 
@@ -895,7 +983,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * @param null $user
 		 * @return null|WP_User
 		 */
-		function get_current_user( $user = null ) {
+		function cmf_get_current_user( $user = null ) {
 			$user = $user ? new WP_User( $user ) : wp_get_current_user();
 			return $user;
 		}
@@ -903,7 +991,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 * Get current site
 		 */
-		function get_current_site() {
+		function cmf_get_current_site() {
 			$current_site = get_blog_details();
 			return $current_site;
 		}
@@ -911,22 +999,22 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 * Get current user's role
 		 */
-		function get_current_user_role() {
-			$user = $this->get_current_user();
+		function cmf_get_current_user_role() {
+			$user = $this->cmf_get_current_user();
 			return $user->roles ? $user->roles[0] : false;
 		}
 
 		/**
 		 * Get category_ids accessible by current user role
 		 */
-		function get_accessible_categories() {
+		function cmf_get_accessible_categories() {
 
 			$filter_cats = array();
 
 			global $wpdb;
 
-			$user_role    = $this->get_current_user_role();
-			$current_site = $this->get_current_site();
+			$user_role    = $this->cmf_get_current_user_role();
+			$current_site = $this->cmf_get_current_site();
 
 			$query = 'SELECT * FROM wp_category_role WHERE site_id = ' . $current_site->id . " AND user_role = '" . $user_role . "'";
 
@@ -942,10 +1030,10 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 * Get category_ids excluded for current user role
 		 */
-		function get_category_exclusion_for_current_user_role() {
+		function cmf_get_category_exclusion_for_current_user_role() {
 			$all_cats  = get_categories();
-			$user_cats = $this->get_accessible_categories();
-			var_dump( $user_cats );
+			$user_cats = $this->cmf_get_accessible_categories();
+			//var_dump( $user_cats );
 
 			// $exclusion = array_diff( $all_cats, $user_cats );
 			// var_dump( $exclusion );
@@ -956,7 +1044,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 *
 		 */
-		function overview_markup() {
+		function cmf_overview_markup() {
 			echo '<div class="wrap"><h1>Overview</h1></div>';
 			$user = wp_get_current_user();
 			$role = (array) $user->roles;
@@ -965,13 +1053,10 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			$user_data = get_userdata( $user_id );
 			if ( is_object( $user_data ) ) {
 				$user_caps = $user_data->allcaps;
-				var_dump( $user_caps );
 			}
-
-			// var_dump ( $user_id );
 		}
 
-		function assignable_caps_list() {
+		function cmf_assignable_caps_list() {
 			$caps = array();
 
 			array_push(
@@ -1000,9 +1085,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 */
 		function list_user_roles() {
 			echo '<div class="wrap"><h1>Roles and Permissions</h1></div>';
-			$roles = $this->get_all_roles();
-			// var_dump ( $roles );
-			// var_dump ( $this->assignable_caps_list() );
+			$roles = $this->cmf_get_all_roles();
+
 			foreach ( $roles as $role ) {
 				if ( strtolower( $role['name'] ) === 'administrator' ) {
 					continue;
@@ -1012,7 +1096,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					<?php
 					$role_slug = sanitize_title_with_dashes( $role['name'] );
 					// Get assignable caps
-					$caps = $this->assignable_caps_list();
+					$caps = $this->cmf_assignable_caps_list();
 					?>
 					<div>
 					<!-- Iterate through roles -->
@@ -1044,12 +1128,12 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 							<p><input class="single-cap" 
 							<?php
 							if ( in_array( $cap, $arr_per_role_cap ) ) {
-								echo 'checked';}
+								echo 'checked'; }
 ?>
  type="checkbox" 
 	<?php
 	if ( 'read' === $cap ) {
-		echo 'disabled';}
+								echo 'disabled'; }
 ?>
  id="<?php echo $cap . '_' . $role_slug; ?>" name="<?php echo $cap; ?>">
 										<span><label style="text-transform: capitalize;" for="<?php echo $cap . '_' . $role_slug; ?>">
@@ -1066,7 +1150,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 		}
 
-		function display_notice( $notice ) {
+		function cmf_display_notice( $notice ) {
 		?>
 			<div class="error notice add-role-page-notice">
 				<?php echo $notice; ?>
@@ -1077,16 +1161,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 * Look into: https://wordpress.org/plugins/capability-manager-enhanced/
 		 */
-		function add_user_role_markup() {
-			// For dev purpose only
-				/*
-				remove_role( 'manager' );
-				remove_role( 'photo-editor' );
-				remove_role( 'competitor' );
-				remove_role( 'salon-judge' );
-				remove_role( 'news-editor' );
-				remove_role( 'entrant' );*/
-			// ***********
+		function cmf_add_user_role_markup() {
 			?>
 			<div class="wrap">
 				<h1>Add Role</h1>
@@ -1170,7 +1245,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 
-		function role_nonce_is_valid() {
+		function cmf_role_nonce_is_valid() {
 			if ( ! isset( $_POST['coolmedia-role-nonce'] ) ) {
 				return false;
 			}
@@ -1189,9 +1264,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * http://www.bethedev.com/2016/12/insert-data-in-database-using-form-in.html
 		 */
 
-		function save_user_role() {
+		function cmf_save_user_role() {
 
-			if ( ! ( $this->role_nonce_is_valid() && current_user_can( 'manage_options' ) ) ) {
+			if ( ! ( $this->cmf_role_nonce_is_valid() && current_user_can( 'manage_options' ) ) ) {
 				// Error
 				return new WP_Error( 'You are not authorized to perform this operation' );
 			}
@@ -1248,17 +1323,17 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 		}
 
-		function maybe_display_notice() {
+		function cmf_maybe_display_notice() {
 			$notice = get_option( 'coolmedia_role_add_error_message', false );
 
 			if ( $notice ) {
 				delete_option( 'coolmedia_role_add_error_message' );
-				$this->display_notice( $notice );
+				$this->cmf_display_notice( $notice );
 			}
 		}
 
-		function get_category_id_array() {
-			$cats    = $this->get_all_categories();
+		function cmf_get_category_id_array() {
+			$cats    = $this->cmf_get_all_categories();
 			$cat_ids = array();
 
 			foreach ( $cats as $cat ) {
@@ -1271,30 +1346,30 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 *
 		 */
-		function get_cleaned_up_category_ids_by_user_role() {
-			$all_cats = $this->get_category_id_array();
+		function cmf_get_cleaned_up_category_ids_by_user_role() {
+			$all_cats = $this->cmf_get_category_id_array();
 		}
 
 
 		/**
 		 * https://wordpress.stackexchange.com/questions/1482/restricting-users-to-view-only-media-library-items-they-have-uploaded
 		 */
-		function restrict_category_access_by_role() {
+		function cmf_restrict_category_access_by_role() {
 		?>
 			<div class="wrap">
 				<h1>Media Access Restriction</h1>
 
 			<?php
-			$cats  = $this->get_all_categories();
-			$roles = $this->get_all_roles();
+			$cats  = $this->cmf_get_all_categories();
+			$roles = $this->cmf_get_all_roles();
 
-			// $ar = $this->get_category_id_array();
+			// $ar = $this->cmf_get_category_id_array();
 			// var_dump( $ar );
 			$u = wp_get_current_user();
 			$r = (array) $u->roles;
 			// var_dump ( $r );
 			// if( $key = array_search(38, $ar) !== false ) {
-			  // unset( $ar[ $key ] );
+			// unset( $ar[ $key ] );
 			// }
 			// echo "<hr />";
 			// var_dump ( $ar );
@@ -1326,7 +1401,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 							<input class="cat-check" 
 							<?php
 							if ( ! empty( $result ) ) {
-								echo 'checked';}
+								echo 'checked'; }
 ?>
  type="checkbox" value="<?php echo $cat->term_id; ?>" />&nbsp; <?php echo $cat->name; ?>
 						</div>
@@ -1345,7 +1420,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * @param bool $editable_only
 		 * @return mixed|void
 		 */
-		function get_all_roles( $editable_only = true ) {
+		function cmf_get_all_roles( $editable_only = true ) {
 			global $wp_roles;
 
 			$all_roles = $wp_roles->roles;
@@ -1361,7 +1436,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 *
 		 */
-		function get_all_categories() {
+		function cmf_get_all_categories() {
 			$args = array(
 				// 'taxonomy'      => 'category',
 				'hide_empty' => false,
@@ -1411,11 +1486,11 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 }
 
 if ( class_exists( 'CoolMediaFilter' ) ) {
-	$coolMediaFilter = new CoolMediaFilter();
-	$coolMediaFilter->register();
+	$cool_media_filter = new CoolMediaFilter();
+	$cool_media_filter->cmf_register();
 }
 
-require_once plugin_dir_path( __FILE__ ) . 'inc/plugin-actions.php';
+require_once plugin_dir_path( __FILE__ ) . 'inc/class-coolmediafilter-plugin-actions.php';
 
 // activate
 register_activation_hook( __FILE__, array( 'CoolMediaFilter', 'activate' ) );

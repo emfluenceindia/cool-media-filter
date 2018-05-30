@@ -4,7 +4,7 @@
  * @package: CoolMediaFilter
  */
 
-class WalkerCategoryMediaGridFilter extends Walker_CategoryDropdown {
+class CoolMediaFilterWalkerCategoryMediaGridFilter extends Walker_CategoryDropdown {
     function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
         $pad = str_repeat( '&nbsp;', $depth * 3 );
 
