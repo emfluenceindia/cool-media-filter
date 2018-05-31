@@ -88,8 +88,10 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 				add_action( 'restrict_manage_posts', array( $this, 'cmf_add_category_filter' ) );
 				add_action( 'admin_footer-upload.php', array( $this, 'cmf_bulk_admin_footer' ) );
+
 				add_action( 'load-upload.php', array( $this, 'cmf_bulk_admin_action' ) );
-				add_action( 'admin_notices', array( $this, 'cmf_bulk_admin_notice' ) );
+
+				//add_action( 'admin_notices', array( $this, 'cmf_bulk_admin_notice' ) );
 				add_action( "plugin_action_links_$this->plugin", array( $this, 'cmf_action_links' ) );
 				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
 
@@ -105,7 +107,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 			add_action( 'admin_init', array( $this, 'cmf_restrict_category_item_access_by_user_role' ) );
 
+			// ---
 			add_action( 'load-upload.php', array( $this, 'cmf_load_media_by_category_access' ) );
+
 			add_filter( 'ajax_query_attachments_args', array( $this, 'cmf_load_media_library_by_category_access' ), 10, 1 );
 
 			add_action( 'admin_menu', array( $this, 'cmf_create_plugin_admin_menu' ) );
@@ -523,7 +527,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
-		 * Bulk admin action.
+		 * Handle the custom Bulk action.
+		 *
+		 * @action load-upload.php
 		 */
 		public function cmf_bulk_admin_action() {
 			global $wpdb;
@@ -534,7 +540,12 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 
 			// Check if 'action' is a category. If not stop execution.
-			$action = ( -1 !== $_REQUEST['action'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['action'] ) ) : sanitize_text_field( wp_unslash( $_REQUEST['action2'] ) );
+			if ( $_REQUEST['action'] !== -1 ) {
+				$action = $_REQUEST['action'];
+			} else {
+				$action = $_REQUEST['action2'];
+			}
+
 			if ( substr( $action, 0, 16 ) !== 'coolmediafilter_' ) { // need to check the correct position.
 				return;
 			}
@@ -544,7 +555,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 			// If Ids are not submitted stop execution.
 			if ( isset( $_REQUEST['media'] ) ) {
-				$post_ids = array_map( 'intval', sanitize_text_field( wp_unslash( $_REQUEST['media'] ) ) );
+				$post_ids = array_map( 'intval', $_REQUEST['media'] );
 			}
 
 			if ( empty( $post_ids ) ) {
@@ -560,20 +571,20 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 			// Remember orderby settings for using when redirected.
 			if ( isset( $_REQUEST['orderby'] ) ) {
-				$current_orderby   = sanitize_text_field( wp_unslash( $_REQUEST['orderby'] ) );
-				$safe_sendback_url = esc_url( add_query_arg( 'orderby', $current_orderby, $safe_sendback_url ) );
+				$current_orderby   = $_REQUEST['orderby'];
+				$safe_sendback_url = add_query_arg( 'orderby', $current_orderby, $safe_sendback_url );
 			}
 
 			// Remeber current order (ASC or DESC) settings for using when redirected.
 			if ( isset( $_REQUEST['order'] ) ) {
-				$current_display_order = sanitize_text_field( wp_unslash( $_REQUEST['order'] ) );
-				$safe_sendback_url     = esc_url( add_query_arg( 'order', $current_display_order, $safe_sendback_url ) );
+				$current_display_order = $_REQUEST['order'];
+				$safe_sendback_url     = add_query_arg( 'order', $current_display_order, $safe_sendback_url );
 			}
 
 			// Remember author.
 			if ( isset( $_REQUEST['author'] ) ) {
-				$current_author    = sanitize_text_field( wp_unslash( $_REQUEST['author'] ) );
-				$safe_sendback_url = esc_url( add_query_arg( 'author', $current_author, $safe_sendback_url ) );
+				$current_author    = $_REQUEST['author'];
+				$safe_sendback_url = add_query_arg( 'author', $current_author, $safe_sendback_url );
 			}
 
 			// Start CRUD functionality.
