@@ -417,51 +417,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
-		 * Description: Add category filter.
-		 */
-		public function cmf_add_category_filter() {
-			require_once plugin_dir_path( __FILE__ ) . 'classes/class-coolmediafilter-walker-category-filter.php';
-
-			global $pagenow;
-
-			if ( 'upload.php' === $pagenow ) {
-
-				// First we find which role current user is in.
-				// Then we find category_ids allowed to be accessed by current role.
-				// All other category_ids will go into exclude array.
-				$role_cats = $this->cmf_get_accessible_categories();
-
-				if ( 'category' !== $this->taxonomy ) {
-					$options = array(
-						'taxonomy'        => $this->taxonomy,
-						'name'            => $this->taxonomy,
-						'show_option_all' => __( 'All categories', 'cool-media-filter' ),
-						'hide_empty'      => false,
-						'hierarchical'    => true,
-						'orderby'         => 'name',
-						'show_count'      => true,
-						'walker'          => new CoolMediaFilterWalkerCategoryFilter(),
-						'value'           => 'slug',
-					);
-				} else {
-					$options = array(
-						'taxonomy'        => $this->taxonomy,
-						'show_option_all' => __( 'All categories', 'cool-media-filter' ),
-						'hide_empty'      => false,
-						'hierarchical'    => true,
-						'orderby'         => 'name',
-						'show_count'      => true,
-						'walker'          => new CoolMediaFilterWalkerCategoryFilter(),
-						'value'           => 'id',
-						'include'         => $role_cats,
-					);
-				}
-
-				wp_dropdown_categories( $options );
-			}
-		}
-
-		/**
 		 * Description: Prepare dropdown values.
 		 */
 		public function cmf_bulk_admin_footer() {
@@ -710,6 +665,52 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
+		 * Description: Add category filter.
+		 */
+		public function cmf_add_category_filter() {
+			require_once plugin_dir_path( __FILE__ ) . 'classes/class-coolmediafilter-walker-category-filter.php';
+
+			global $pagenow;
+
+			if ( 'upload.php' === $pagenow ) {
+
+				// First we find which role current user is in.
+				// Then we find category_ids allowed to be accessed by current role.
+				// All other category_ids will go into exclude array.
+				$role_cats = $this->cmf_get_accessible_categories();
+
+				if ( 'category' !== $this->taxonomy ) {
+					$options = array(
+						'taxonomy'        => $this->taxonomy,
+						'name'            => $this->taxonomy,
+						'show_option_all' => __( 'All categories', 'cool-media-filter' ),
+						'hide_empty'      => false,
+						'hierarchical'    => true,
+						'orderby'         => 'name',
+						'show_count'      => true,
+						'walker'          => new CoolMediaFilterWalkerCategoryFilter(),
+						'value'           => 'slug',
+						'include'         => $role_cats,
+					);
+				} else {
+					$options = array(
+						'taxonomy'        => $this->taxonomy,
+						'show_option_all' => __( 'All categories', 'cool-media-filter' ),
+						'hide_empty'      => false,
+						'hierarchical'    => true,
+						'orderby'         => 'name',
+						'show_count'      => true,
+						'walker'          => new CoolMediaFilterWalkerCategoryFilter(),
+						'value'           => 'id',
+						'include'         => $role_cats,
+					);
+				}
+
+				wp_dropdown_categories( $options );
+			}
+		}
+
+		/**
 		 * Adds category dropdown in grid view mode
 		 */
 		function cmf_enqueue_media_action() {
@@ -764,6 +765,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					'include'    => $cats,
 					'orderby'    => 'name',
 					'order'      => 'ASC',
+					'show_count' => true,
 				);
 
 				wp_localize_script(

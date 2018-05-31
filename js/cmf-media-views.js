@@ -10,7 +10,7 @@
             // Formats the 'terms' we've included via wp_localize_script()
             _.each( MediaLibraryCategoryFilterOptions.terms || {}, function( value, index ) {
                 filters[ value.term_id ] = {
-                    text: value.name,
+                    text: value.name + ' (' + value.count + ')',
                     props: {
                         // The WP_Query var for the taxonomy
                         category: value.term_id,
