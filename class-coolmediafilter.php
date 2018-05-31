@@ -1056,10 +1056,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		function cmf_get_category_exclusion_for_current_user_role() {
 			$all_cats  = get_categories();
 			$user_cats = $this->cmf_get_accessible_categories();
-			//var_dump( $user_cats );
 
 			// $exclusion = array_diff( $all_cats, $user_cats );
-			// var_dump( $exclusion );
 			return $all_cats;
 		}
 
@@ -1135,7 +1133,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						<?php
 						// Get array of caps for this role.
 						$caps_by_role = $value['capabilities'];
-						// var_dump( $caps_by_role );
 						$arr_per_role_cap = array();
 						foreach ( $caps_by_role as $role_cap_key => $role_cap_value ) {
 							// Put each cap_value in another array to be used for comparison
@@ -1143,9 +1140,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						}
 
 						foreach ( $caps as $cap ) {
-							// iterate thorugh all assignable caps
-							// Inner loop to iterate through all available caps for current role
-							// Check if current $arr_per_role_cap has the $cap in it. If yes, auto check the caps checkbox
+							// iterate thorugh all assignable caps.
+							// Inner loop to iterate through all available caps for current role.
+							// Check if current $arr_per_role_cap has the $cap in it. If yes, auto check the caps checkbox.
 							?>
 
 							<p><input class="single-cap" 
@@ -1387,15 +1384,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			$roles = $this->cmf_get_all_roles();
 
 			// $ar = $this->cmf_get_category_id_array();
-			// var_dump( $ar );
 			$u = wp_get_current_user();
 			$r = (array) $u->roles;
-			// var_dump ( $r );
-			// if( $key = array_search(38, $ar) !== false ) {
-			// unset( $ar[ $key ] );
-			// }
-			// echo "<hr />";
-			// var_dump ( $ar );
+
 			$current_site = get_blog_details();
 			$site_id      = $current_site->id;
 
