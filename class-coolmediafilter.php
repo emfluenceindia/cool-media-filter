@@ -550,6 +550,15 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				return;
 			}
 
+			//Get the selected category id from $action.
+			$selected_category_id = (int)substr( $action, strrpos( $action, '_' ) + 1 );
+
+			if ( isset( $_REQUEST['_ajax_nonce'] ) ) {
+				$ajax_nonce = $_REQUEST['_ajax_nonce'];
+			} else {
+				$ajax_nonce = wp_create_nonce();
+			}
+
 			// Do a security check.
 			check_admin_referer( 'bulk-media' );
 
@@ -562,7 +571,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				return;
 			}
 
-			$safe_sendback_url = admin_url( 'upload.php?editCategory=1' );
+			$safe_sendback_url = admin_url( 'upload.php?upload.php?mode=list&attachment-filter&m=0&cat=' . $selected_category_id . '&filter_action=Filter&s&action=-1&paged=1&action2=-1&affected&_ajax_nonce=' . $ajax_nonce . '&ps' );
+			//$safe_sendback_url = admin_url( 'upload.php?editCategory=1' );
 
 			// Remember page number for safe redirect.
 			// If no current page is set, default to 0.
