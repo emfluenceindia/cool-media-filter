@@ -93,8 +93,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 				//add_action( 'admin_notices', array( $this, 'cmf_bulk_admin_notice' ) );
 				add_action( "plugin_action_links_$this->plugin", array( $this, 'cmf_action_links' ) );
-				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
 
+				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
 				add_action( 'admin_enqueue_scripts', array( $this, 'cmf_enqueue_media_action' ) );
 
 				add_action( 'wp_ajax_save-attachment-compat', array( $this, 'cmf_save_attachment' ), 0 );
@@ -671,6 +671,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		/**
 		 * Attachment Query Builder.
 		 *
+		 * @action ajax_query_attachments_args
 		 * @param array $query Optional.
 		 * @return array $query Returns query object.
 		 * Changing categories in gridview.
@@ -683,12 +684,11 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			$tax_query = isset( $_REQUEST['query'] ) ? (array) $_REQUEST['query'] : array();
 
 			// Get the taxonomies for attachments by names.
-			$att_taxonomies = get_object_taxonomies( $this->post_type, 'names' );
-
+			$att_taxonomies = get_object_taxonomies( 'attachment', 'names' );
 			$tax_query = array_intersect_key( $tax_query, array_flip( $att_taxonomies ) );
 
-			// Merge $tax_query into actual filtered WordPress query.
-			array_merge( $query, $tax_query );
+			// Merge $tax_query into WordPress query.
+			$query = array_merge( $query, $tax_query );
 
 			$query['tax_query'] = array( 'relation' => 'AND' );
 
