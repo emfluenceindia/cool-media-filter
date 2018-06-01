@@ -317,9 +317,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
-		 * Shortcode registration.
+		 * Custom gallery shortcode.
 		 */
-		public function cmf_register_gallery_shortcode() {
+		public function cmf_custom_gallery_shortcode() {
 			require_once plugin_dir_path() . 'inc/coolmediafilter-gallery-shortcode.php';
 		}
 
