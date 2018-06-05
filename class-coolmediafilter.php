@@ -755,8 +755,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				echo '/* ]]> */';
 				echo '</script>';
 
-				// wp_enqueue_script('coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-view.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
-				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/cmf-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
 
 				$cats = $this->cmf_get_accessible_categories();
 
