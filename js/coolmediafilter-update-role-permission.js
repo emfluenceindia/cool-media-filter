@@ -1,18 +1,21 @@
-//Purpose is to update caps for present role
-//First remove all available caps from selected role and add selected caps to it
+/**
+ * Manage role caps.
+ *
+ * @param obj
+ */
 
-function updateRoleCaps( obj ) {
+function cmf_UpdateRoleCaps( obj ) {
+    jQuery( obj ).val("Working...");
+    jQuery( obj ).attr("disabled", "disabled");
+
     //Get the values...
     var container = jQuery( obj ).closest( ".user_role_update_list" );
     var roleKey = jQuery( container ).find( ".role_key" ).val();
-    //alert( jQuery( container ).attr( "class" ) );
-    //alert( roleKey );
 
     var selectedCaps = "";
     jQuery ( container ).find( ".single-cap" ).each( function() {
         if( jQuery( this ).is( ":checked" ) ) {
             selectedCaps = selectedCaps + jQuery( this ).attr( "name" ) + ",";
-            //alert( jQuery( this ).attr( "name" ) );
         }
     } );
 
@@ -20,20 +23,20 @@ function updateRoleCaps( obj ) {
         selectedCaps = selectedCaps.slice( 0, -1 );
     }
 
-    //alert(selectedCaps);
-
-    jQuery.ajax({
-        type: 'POST',
-        url: role_permission_ajax.url,
-        data: {
-            action: 'role_permission',
-            role_key: roleKey,
-            new_caps: selectedCaps,
-        },
-        success: function( result ) {
-            //alert( result );
-        }
-    });
-
-    //alert( selectedCaps );
+    window.setTimeout(function(){
+        jQuery.ajax({
+            type: 'POST',
+            url: role_permission_ajax.url,
+            data: {
+                action: 'role_permission',
+                role_key: roleKey,
+                new_caps: selectedCaps,
+            },
+            success: function( result ) {
+                jQuery( obj ).val("Update Permission");
+                jQuery( obj ).removeAttr("disabled");
+    
+            }
+        });
+    }, 2000);
 }

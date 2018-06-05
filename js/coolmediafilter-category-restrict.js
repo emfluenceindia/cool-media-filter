@@ -1,4 +1,10 @@
-function updateAccess( obj ) {
+/**
+ * Manage Category accessibilily by role.
+ *
+ * @param obj
+ */
+
+function cmf_updateAccess( obj ) {
     jQuery( obj ).val("Working...");
     jQuery( obj ).attr("disabled", "disabled");
     var selectedCatIds = "";
@@ -9,9 +15,6 @@ function updateAccess( obj ) {
     jQuery( catList ).children().each( function() {
         if( jQuery(this).is(":checked") ) {
         	selectedCatIds += jQuery(this).val() + ",";
-            //alert( jQuery( obj ).attr("value") );
-            //alert( jQuery(this).val() );
-            //alert( roleSlug );
         }
     });
 
@@ -20,8 +23,6 @@ function updateAccess( obj ) {
     	selectedCatIds = selectedCatIds.substring(0, idLen - 1);
     }
     
-    //alert( selectedCatIds );
-
     window.setTimeout(function(){
         jQuery.ajax({
             type: 'POST',

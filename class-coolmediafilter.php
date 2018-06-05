@@ -245,7 +245,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		public function cmf_update_role_category_access() {
 			$user_role     = 'Not defined';
 			$selected_cats = 'None selected';
-			$site_id       = 'Undefined';
+			$site_id       = -1;
 
 			if ( isset( $_POST['user_role'] ) && '' !== $_POST['user_role'] ) {
 				$user_role = sanitize_text_field( wp_unslash( $_POST['user_role'] ) );
@@ -256,7 +256,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 
 			if ( isset( $_POST['site_id'] ) && '' !== $_POST['site_id'] ) {
-				$site_id = sanitize_text_field( wp_unslash( $_POST['site_id'] ) );
+				$site_id = (int)( $_POST['site_id'] );
 			}
 
 			// We have all the information back from AJAX. Now we are good to save them in our map table.
@@ -1063,20 +1063,32 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 
 		/**
-		 *
+		 * Plugin page overview markup.
 		 */
 		function cmf_overview_markup() {
-			echo '<div class="wrap"><h1>Overview</h1></div>';
-			$user = wp_get_current_user();
-			$role = (array) $user->roles;
-
-			$user_id   = get_current_user_id();
-			$user_data = get_userdata( $user_id );
-			if ( is_object( $user_data ) ) {
-				$user_caps = $user_data->allcaps;
-			}
+			?>
+			<div class="wrap overview">
+				<h1>Overview</h1>
+				<p>
+					<b>Cool Media Filter</b> lets you
+				</p>
+				<ul>
+					<li><a href="<?php echo admin_url( 'admin.php?page=new-user-role' ); ?>"><i class="fa fa-plus-square"></i>&nbsp;&nbsp;Create New User Role</a> and set Role Permissions while creating the same.</li>
+					<li><a href="<?php echo admin_url( 'admin.php?page=user-roles' ); ?>"><i class="fa fa-users"></i>&nbsp;Manage Permissions</a> for Roles using a friendly AJAX based UI.</li>
+					<li><a href="<?php echo admin_url( 'admin.php?page=manage-category-access' ); ?>"><i class="fa fa-file-photo-o"></i>&nbsp;&nbsp;Restrict Media Category Access</a> for different user roles from an one-page AJAX based UI.</li>
+					<li><a href="<?php echo admin_url( 'upload.php?mode=grid' ); ?>"><i class="fa fa-filter"></i>&nbsp;&nbsp;Filter Media</a> by selecting a Category from Category dropdown.</li>
+					<li><a href="<?php echo admin_url( 'upload.php?mode=list' ); ?>"><i class="fa fa-gear"></i>&nbsp;Assign or Remove</a> Category from selected media files as a Bulk Action.</li>
+				</ul>
+				<p><i class="fa fa-github"></i>&nbsp;<a target="_blank" href="https://github.com/emfluenceindia/cool-media-filter">https://github.com/emfluenceindia/cool-media-filter</a></p>
+			</div>
+			<?php
 		}
 
+		/**
+		 * Creates and returns a list of assignable caps when adding a role.
+		 *
+		 * @return array List of assignable caps
+		 */
 		function cmf_assignable_caps_list() {
 			$caps = array();
 
@@ -1164,7 +1176,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					}
 					?>
 					</div>
-					<input type="button" onclick="updateRoleCaps( this );" class="button button-primary" value="Update Permission" />
+					<input type="button" onclick="cmf_UpdateRoleCaps( this );" class="button button-primary" value="Update Permission" />
 				</div>
 			<?php
 			}
@@ -1421,7 +1433,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						</div>
 					<?php } ?>
 
-					<input type="button" onclick="updateAccess(this);" value="Update" class="access_update button button-primary" />
+					<input type="button" onclick="cmf_updateAccess(this);" value="Update" class="access_update button button-primary" />
 
 				</div>
 			<?php } ?>

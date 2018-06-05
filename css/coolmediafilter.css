@@ -116,3 +116,30 @@
 .user_role_update_list p {
     margin: .3em auto;
 }
+
+.overview p {
+    font-size: 1.5em;
+}
+
+.overview ul {
+    margin-left: 2em;
+}
+
+.overview ul li {
+    font-size: 1.2em;
+    line-height: 2.6em;
+}
+
+.overview ul li a,
+.overview p a{
+    color: #000000;
+}
+
+.overview ul li a{
+    background: #21759b;
+    color: #fff;
+    padding: .6em;
+    border-radius: .3em;
+    -webkit-border-radius: .3em;
+    -mozilla-border-radius: .3em;
+}
