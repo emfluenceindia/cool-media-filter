@@ -313,7 +313,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Redirection.
 		 */
 		public function cmf_redirect_to_role_page_after_submission() {
-			wp_safe_redirect( admin_url( 'admin.php?page=new-user-role' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=cmf-new-user-role' ) );
 		}
 
 		/**
@@ -807,6 +807,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 
 			$attachment_data = $_REQUEST['attachments'][ $id ];
+			if( ! is_numeric( $_REQUEST['attachments'][ $id ] ) && ! absint( $_REQUEST['attachments'][ $id ] === $attachment_data ) ) {
+				wp_send_json_error();
+			}
 
 			check_ajax_referer( 'update_post_' . $id, 'nonce' );
 
@@ -825,7 +828,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			$post = apply_filters( 'attachment_fields_to_save', $post, $attachment_data );
 
 			if ( isset( $_POST['errors'] ) ) {
-				$errors = $_POST['errors'];
+				$errors = sanitize_text_field( wp_unslash( $_POST['errors'] ) );
 				unset( $_POST['errors'] );
 			}
 
@@ -917,8 +920,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 *
 		 */
 		function cmf_create_plugin_admin_menu() {
-			$page_title = 'Cool Media Filter';
-			$menu_title = 'Cool Media Filter';
+			$page_title = __( 'Cool Media Filter' );
+			$menu_title = __( 'Cool Media Filter' );
 			$capability = 'manage_options';
 			$menu_slug  = 'user-category-access';
 			$callback   = array( $this, 'cmf_plugin_options_page' );
@@ -939,19 +942,19 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 				add_submenu_page(
 					$menu_slug,
-					'Overview',
-					'Overview',
+					__( 'Overview' ),
+					__( 'Overview' ),
 					'read',
-					'plugin-overview',
+					'cmf-plugin-overview',
 					array( $this, 'cmf_overview_markup' )
 				);
 
 				add_submenu_page(
 					'user-category-access',
-					'All Roles',
-					'Roles and Permissions',
+					__( 'All Roles' ),
+					__( 'Roles and Permissions' ),
 					'manage_options',
-					'user-roles',
+					'cmf-user-roles',
 					array( $this, 'list_user_roles' )
 				);
 
@@ -960,7 +963,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					'Add New Role',
 					'Add New Role',
 					'manage_options',
-					'new-user-role',
+					'cmf-new-user-role',
 					array( $this, 'cmf_add_user_role_markup' )
 				);
 
@@ -969,7 +972,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					'Category Access',
 					'Category Access',
 					'manage_options',
-					'manage-category-access',
+					'cmf-manage-category-access',
 					array( $this, 'cmf_restrict_category_access_by_role' )
 				);
 
@@ -1066,22 +1069,21 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Plugin page overview markup.
 		 */
 		function cmf_overview_markup() {
-			?>
-			<div class="wrap overview">
-				<h1>Overview</h1>
-				<p>
-					<b>Cool Media Filter</b> lets you
-				</p>
-				<ul>
-					<li><a href="<?php echo admin_url( 'admin.php?page=new-user-role' ); ?>"><i class="fa fa-plus-square"></i>&nbsp;&nbsp;Create New User Role</a> and set Role Permissions while creating the same.</li>
-					<li><a href="<?php echo admin_url( 'admin.php?page=user-roles' ); ?>"><i class="fa fa-users"></i>&nbsp;Manage Permissions</a> for Roles using a friendly AJAX based UI.</li>
-					<li><a href="<?php echo admin_url( 'admin.php?page=manage-category-access' ); ?>"><i class="fa fa-file-photo-o"></i>&nbsp;&nbsp;Restrict Media Category Access</a> for different user roles from an one-page AJAX based UI.</li>
-					<li><a href="<?php echo admin_url( 'upload.php?mode=grid' ); ?>"><i class="fa fa-filter"></i>&nbsp;&nbsp;Filter Media</a> by selecting a Category from Category dropdown.</li>
-					<li><a href="<?php echo admin_url( 'upload.php?mode=list' ); ?>"><i class="fa fa-gear"></i>&nbsp;Assign or Remove</a> Category from selected media files as a Bulk Action.</li>
-				</ul>
-				<p><i class="fa fa-github"></i>&nbsp;<a target="_blank" href="https://github.com/emfluenceindia/cool-media-filter">https://github.com/emfluenceindia/cool-media-filter</a></p>
-			</div>
-			<?php
+
+			$html  = '<div class="wrap overview">';
+			$html .= '<h1>Overview</h1>';
+			$html .= '<p><b>Cool Media Filter</b> lets you</p>';
+			$html .= '<ul>';
+			$html .= '<li><a href="' . admin_url( 'admin.php?page=cmf-new-user-role' ) . '"><i class="fa fa-plus-square"></i>&nbsp;&nbsp;Create New User Role</a> and set Role Permissions while creating the same.</li>';
+			$html .= '<li><a href="' . admin_url( 'admin.php?page=cmf-user-roles' ) . '"><i class="fa fa-users"></i>&nbsp;Manage Permissions</a> for Roles using a friendly AJAX based UI.</li>';
+			$html .= '<li><a href="' . admin_url( 'admin.php?page=cmf-manage-category-access' ) . '"><i class="fa fa-file-photo-o"></i>&nbsp;&nbsp;Restrict Media Category Access</a> for different user roles from an one-page AJAX based UI.</li>';
+			$html .= '<li><a href="' . admin_url( 'upload.php?mode=grid' ) . '"><i class="fa fa-filter"></i>&nbsp;&nbsp;Filter Media</a> by selecting a Category from Category dropdown.</li>';
+			$html .= '<li><a href="' . admin_url( 'upload.php?mode=list' ) . '"><i class="fa fa-gear"></i>&nbsp;Assign or Remove</a> Category from selected media files as a Bulk Action.</li>';
+			$html .= '</ul>';
+			$html .= '<p><i class="fa fa-github"></i>&nbsp;<a target="_blank" href="https://github.com/emfluenceindia/cool-media-filter">https://github.com/emfluenceindia/cool-media-filter</a></p>';
+			$html .= '</div>';
+
+			echo $html;
 		}
 
 		/**
@@ -1277,12 +1279,17 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 
+		/**
+		 * Validates nonce on Role add sceeen.
+		 *
+		 * @return bool|false|int
+		 */
 		function cmf_role_nonce_is_valid() {
 			if ( ! isset( $_POST['coolmedia-role-nonce'] ) ) {
 				return false;
 			}
 
-			$field  = wp_unslash( $_POST['coolmedia-role-nonce'] );
+			$field  = sanitize_text_field( wp_unslash( $_POST['coolmedia-role-nonce'] ) );
 			$action = 'coolmedia-role-save';
 
 			return wp_verify_nonce( $field, $action );
@@ -1294,6 +1301,12 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * https://code.tutsplus.com/tutorials/creating-custom-admin-pages-in-wordpress-3--cms-27017
 		 * https://premium.wpmudev.org/blog/handling-form-submissions/
 		 * http://www.bethedev.com/2016/12/insert-data-in-database-using-form-in.html
+		 */
+
+		/**
+		 * Save new User Role
+		 *
+		 * @return WP_Error
 		 */
 
 		function cmf_save_user_role() {
@@ -1309,13 +1322,13 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				$notice = 'Role name was not supplied';
 				update_option( 'coolmedia_role_add_error_message', $notice, 'no' );
 
-				wp_redirect( admin_url( 'admin.php?page=new-user-role' ) );
+				wp_redirect( admin_url( 'admin.php?page=cmf-new-user-role' ) );
 
 			} else {
 
 				// Does the role already exist?
 				// https://docs.ultimatemember.com/article/164-getrole
-				$role_name = $_POST['coolmedia_role_name'];
+				$role_name = sanitize_text_field( wp_unslash( $_POST['coolmedia_role_name'] ) );
 				$role_slug = sanitize_title_with_dashes( $role_name );
 				$role      = get_role( $role_slug );
 
@@ -1324,33 +1337,34 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 					$notice = 'Role "' . $role_name . '" already exists';
 					update_option( 'coolmedia_role_add_error_message', $notice, 'no' );
 
-					wp_redirect( admin_url( 'admin.php?page=new-user-role' ) );
+					wp_redirect( admin_url( 'admin.php?page=cmf-new-user-role' ) );
 				} else {
 					// Safe to create the new role
 					$role_caps = array(
 						'read' => true,
 					);
 
-					if ( isset( $_POST['edit_pages'] ) ) {
+					// We need to loop though caps and pick the selected ones. No hard coding.
+					if ( isset( $_POST['edit_pages'] ) && ! empty( $_POST['edit_pages'] ) ) {
 						$role_caps['edit_pages'] = true;
 					}
 
-					if ( isset( $_POST['edit_posts'] ) ) {
+					if ( isset( $_POST['edit_posts'] ) && ! empty( $_POST['edit_posts'] ) ) {
 						$role_caps['edit_posts'] = true;
 					}
 
-					if ( isset( $_POST['publish_posts'] ) ) {
+					if ( isset( $_POST['publish_posts'] ) && ! empty( $_POST['publish_posts'] ) ) {
 						$role_caps['publish_posts'] = true;
 					}
 
-					if ( isset( $_POST['publish_pages'] ) ) {
+					if ( isset( $_POST['publish_pages'] ) && ! empty( $_POST['publish_pages'] ) ) {
 						$role_caps['publish_pages'] = true;
 					}
 
-					add_role( $role_slug, esc_html( $role_name ), $role_caps );
+					add_role( $role_slug, $role_name, $role_caps );
 
 					// Redirect back to form page
-					wp_redirect( admin_url( 'admin.php?page=user-roles' ) );
+					wp_redirect( admin_url( 'admin.php?page=cmf-user-roles' ) );
 				}
 			}
 		}
@@ -1385,6 +1399,10 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 		/**
 		 * https://wordpress.stackexchange.com/questions/1482/restricting-users-to-view-only-media-library-items-they-have-uploaded
+		 */
+
+		/**
+		 * Markup for Restricts category access by role.
 		 */
 		function cmf_restrict_category_access_by_role() {
 		?>
@@ -1459,12 +1477,14 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			}
 		}
 
+
 		/**
+		 * Gets all categories.
 		 *
+		 * @return array
 		 */
 		function cmf_get_all_categories() {
 			$args = array(
-				// 'taxonomy'      => 'category',
 				'hide_empty' => false,
 				'taxonomy'   => $this->taxonomy,
 				'orderby'    => 'name',
@@ -1476,6 +1496,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			return $cats;
 		}
 
+		/**
+		 * Creates mapping table when plugin is installed.
+		 */
 		static function activate() {
 			global $wpdb;
 			$map_table = $wpdb->prefix . 'category_role';
