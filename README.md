@@ -10,6 +10,8 @@ Cool Media Filter lets you
 * Filter Media by selecting a Category from Category dropdown.
 * Assign or Remove Category from selected media files as a Bulk Action.
 
+** Does not work under VIP environment so far. **
+
 
 ## Initial version:
 1.0.0
