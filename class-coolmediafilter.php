@@ -91,7 +91,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 				add_action( 'load-upload.php', array( $this, 'cmf_bulk_admin_action' ) );
 
-				//add_action( 'admin_notices', array( $this, 'cmf_bulk_admin_notice' ) );
 				add_action( "plugin_action_links_$this->plugin", array( $this, 'cmf_action_links' ) );
 
 				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
@@ -1192,6 +1191,30 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
+		 * Creates and returns an array of default caps to be used in Add Role page UI.
+		 *
+		 * @return array
+		 */
+		function cmf_default_role_caps() {
+			$default_caps = array(
+				'read_private_posts' => __( 'Read Private Posts' ),
+				'read_private_pages' => __( 'Read Private Pages' ),
+				'edit_pages'         => __( 'Edit Pages' ),
+				'edit_others_pages'  => __( 'Edit Others Pages'),
+				'publish_pages'      => __( 'Publish Pages' ),
+				'publish_posts'      => __( 'Publish Posts' ),
+				'edit_posts'         => __( 'Edit Posts' ),
+				'edit_others_posts'  => __( 'Edit Others Posts' ),
+				'list_users'         => __( 'List Users' ),
+				'edit_users'         => __( 'Edit Users' ),
+				'create_users'       => __( 'Create Users' ),
+				'manage_options'     => __( 'Manage Options' ),
+			);
+
+			return $default_caps;
+		}
+
+		/**
 		 * Look into: https://wordpress.org/plugins/capability-manager-enhanced/
 		 */
 		function cmf_add_user_role_markup() {
@@ -1213,54 +1236,15 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 										<input type="checkbox" id="read" name="read" disabled="disabled" checked="checked">
 										<label for="read">Read</label>
 									</li>
-									<li>
-										<input type="checkbox" id="read_private_posts" name="read_private_posts">
-										<label for="read_private_posts">Read Private Posts</label>
-									</li>
-									<li>
-										<input type="checkbox" id="read_private_pages" name="read_private_pages">
-										<label for="read_private_pages">Read Private Pages</label>
-									</li>
-									<li>
-										<input type="checkbox" id="edit_pages" name="edit_pages">
-										<label for="edit_pages">Edit Pages</label>
-									</li>
-									<li>
-										<input type="checkbox" id="edit_others_pages" name="edit_others_pages">
-										<label for="edit_others_pages">Edit Others' Pages</label>
-									</li>
-									<li>
-										<input type="checkbox" id="publish_pages" name="publish_pages">
-										<label for="publish_pages">Publish Pages</label>
-									</li>
-									<li>
-										<input type="checkbox" id="edit_posts" name="edit_posts">
-										<label for="edit_posts">Edit Posts</label>
-									</li>
-									<li>
-										<input type="checkbox" id="edit_others_posts" name="edit_others_posts">
-										<label for="edit_others_posts">Edit Others' Posts</label>
-									</li>
-									<li>
-										<input type="checkbox" id="publish_posts" name="publish_posts">
-										<label for="publish_posts">Publish Posts</label>
-									</li>
-									<li>
-										<input type="checkbox" id="list_users" name="list_users">
-										<label for="list_users">List Users</label>
-									</li>
-									<li>
-										<input type="checkbox" id="create_users" name="create_users">
-										<label for="create_users">Create Users</label>
-									</li>
-									<li>
-										<input type="checkbox" id="edit_users" name="edit_users">
-										<label for="edit_users">Edit Users</label>
-									</li>
-									<li>
-										<input type="checkbox" id="manage_options" name="manage_options">
-										<label for="manage_options">Manage Options</label>
-									</li>
+									<?php
+									$default_caps = $this->cmf_default_role_caps();
+									foreach( $default_caps as $key => $value ) { ?>
+										<li>
+											<input type="checkbox" id="<?php echo $key ?>" name="<?php echo $key ?>">
+											<label for="<?php echo $key ?>"><?php echo $value; ?></label>
+										</li>
+									<?php }
+									?>
 								</ul>
 							</td>
 						</tr>
@@ -1343,21 +1327,11 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 						'read' => true,
 					);
 
-					// We need to loop though caps and pick the selected ones. No hard coding.
-					if ( isset( $_POST['edit_pages'] ) && ! empty( $_POST['edit_pages'] ) ) {
-						$role_caps['edit_pages'] = true;
-					}
-
-					if ( isset( $_POST['edit_posts'] ) && ! empty( $_POST['edit_posts'] ) ) {
-						$role_caps['edit_posts'] = true;
-					}
-
-					if ( isset( $_POST['publish_posts'] ) && ! empty( $_POST['publish_posts'] ) ) {
-						$role_caps['publish_posts'] = true;
-					}
-
-					if ( isset( $_POST['publish_pages'] ) && ! empty( $_POST['publish_pages'] ) ) {
-						$role_caps['publish_pages'] = true;
+					$default_caps = $this->cmf_default_role_caps();
+					foreach( $default_caps as $key => $value ) {
+						if( isset( $_POST[ $key ] ) && ! empty( $_POST[ $key ] ) ) {
+							$role_caps[ $key ] = true;
+						}
 					}
 
 					add_role( $role_slug, $role_name, $role_caps );
