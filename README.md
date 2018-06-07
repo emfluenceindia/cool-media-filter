@@ -2,10 +2,14 @@
 Cool Media Filter.
 
 # Description
-Free WordPress Plugin. Adds the ability bring up categories in WordPress Media Library. Once you activate this plugin a category dropdown will appear in media library.
-You can filter your media files by selecting a category from list and by hitting the Filter button.
-You will also be able to attach or detach multiple media files to a selected category under Bulk Actions dropdown.
-Admin can also create new Roles, assign roles against categories from different UI driven plugin pages.
+Cool Media Filter lets you
+
+* Create New User Role and set Role Permissions while creating the same.
+* Manage Permissions for Roles using a friendly AJAX based UI.
+* Restrict Media Category Access for different user roles from an one-page AJAX based UI.
+* Filter Media by selecting a Category from Category dropdown.
+* Assign or Remove Category from selected media files as a Bulk Action.
+
 
 ## Initial version:
 1.0.0
@@ -23,4 +27,4 @@ See also the list of [contributors](https://github.com/emfluenceindia/cool-media
 
 ## Acknowledgments
 * Hat tip: jeffrey-wp
-* Inspired by: Jacob Schwartz, emfluence Digital Marketing
+* Inspired by: Jacob Schwartz, [emfluence Digital Marketing](https://emfluence.com/)
