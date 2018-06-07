@@ -1390,8 +1390,17 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			$u = wp_get_current_user();
 			$r = (array) $u->roles;
 
-			$current_site = get_blog_details();
-			$site_id      = $current_site->id;
+			/**
+			 * Function get_blog_details does not work in solo site environment.
+			 * So before using this function we first need to check whether it is a multisite environment.
+			 * If not, we set site_id to 1 by default.
+			 */
+			if( is_multisite() ) {
+				$current_site = get_blog_details();
+				$site_id = $current_site->id;
+			} else {
+				$site_id = 1;
+			}
 
 			foreach ( $roles as $role ) {
 				if ( strtolower( $role['name'] ) == 'administrator' ) { // Administrator has full access. We skip this
