@@ -10,7 +10,7 @@ Cool Media Filter lets you
 * Filter Media by selecting a Category from Category dropdown.
 * Assign or Remove Category from selected media files as a Bulk Action.
 
-** Does not work under VIP environment so far. **
+**Does not work under VIP environment so far.**
 
 
 ## Initial version:
@@ -23,7 +23,7 @@ Cool Media Filter lets you
 This project is licensed under the MIT License.
 
 ## Authors
-* **Subrata Sarkar** - *Initial work* - [emfluenceindia](https://github.com/emfluenceindia)
+* **[Subrata Sarkar]**(http://subratasarkar.com) - *Initial work* - [emfluenceindia](https://github.com/emfluenceindia)
 
 See also the list of [contributors](https://github.com/emfluenceindia/cool-media-filter/graphs/contributors) who participated in this project.
 
