@@ -1395,7 +1395,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			 * So before using this function we first need to check whether it is a multisite environment.
 			 * If not, we set site_id to 1 by default.
 			 */
-			if( is_multisite() ) {
+			if ( is_multisite() ) {
 				$current_site = get_blog_details();
 				$site_id = $current_site->id;
 			} else {
