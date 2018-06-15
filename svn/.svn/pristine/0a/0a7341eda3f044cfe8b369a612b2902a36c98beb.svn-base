@@ -190,7 +190,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Script localization.
 		 */
 		public function cmf_localize_scripts() {
-			wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.1', true );
+			wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
 
 			wp_localize_script(
 				'role_category_access', 'category_access_ajax', array(
@@ -199,7 +199,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				)
 			);
 
-			wp_enqueue_script( 'update_role_permission', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-update-role-permission.js', array( 'jquery' ), '1.0.1', true );
+			wp_enqueue_script( 'update_role_permission', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-update-role-permission.js', array( 'jquery' ), '1.0.0', true );
 
 			wp_localize_script(
 				'update_role_permission', 'role_permission_ajax', array(
@@ -743,7 +743,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				echo '/* ]]> */';
 				echo '</script>';
 
-				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.1', true );
+				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
 
 				$cats = $this->cmf_get_accessible_categories();
 
@@ -766,7 +766,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				);
 			}
 
-			wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.1' );
+			wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.0' );
 		}
 
 		/**

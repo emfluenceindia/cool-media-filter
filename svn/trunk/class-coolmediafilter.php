@@ -9,7 +9,7 @@
  * Plugin Name: Cool Media Filter
  * Plugin URI:
  * Description: Filter media files and attach or detach to or from selected category in bulk
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Subrata Sarkar
  * Author URI: http://subratasarkar.com
  * License: GPLv2 or later
@@ -64,9 +64,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 		/**
 		 * CoolMediaFilter constructor.
+		 * Creates an instance of CoolMediaFilter class.
 		 */
 		public function __construct() {
-			$this->plugin      = plugin_basename( __FILE__ );
 			$this->taxonomy    = 'category';
 			$this->post_type   = 'attachment';
 			$this->text_domain = 'cool-media-filter';
@@ -90,8 +90,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				add_action( 'admin_footer-upload.php', array( $this, 'cmf_bulk_admin_footer' ) );
 
 				add_action( 'load-upload.php', array( $this, 'cmf_bulk_admin_action' ) );
-
-				add_action( "plugin_action_links_$this->plugin", array( $this, 'cmf_action_links' ) );
 
 				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
 				add_action( 'admin_enqueue_scripts', array( $this, 'cmf_enqueue_media_action' ) );
@@ -192,7 +190,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		 * Script localization.
 		 */
 		public function cmf_localize_scripts() {
-			wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.0', true );
+			wp_enqueue_script( 'role_category_access', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-category-restrict.js', array( 'jquery' ), '1.0.1', true );
 
 			wp_localize_script(
 				'role_category_access', 'category_access_ajax', array(
@@ -201,7 +199,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				)
 			);
 
-			wp_enqueue_script( 'update_role_permission', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-update-role-permission.js', array( 'jquery' ), '1.0.0', true );
+			wp_enqueue_script( 'update_role_permission', plugin_dir_url( __FILE__ ) . 'js/coolmediafilter-update-role-permission.js', array( 'jquery' ), '1.0.1', true );
 
 			wp_localize_script(
 				'update_role_permission', 'role_permission_ajax', array(
@@ -614,15 +612,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		/**
-		 * To be implemented.
-		 *
-		 * @param array $links accepts an array of string values.
-		 */
-		public function cmf_action_links( $links ) {
-			// To be implemented.
-		}
-
-		/**
 		 * Attachment Query Builder.
 		 *
 		 * @action ajax_query_attachments_args
@@ -754,7 +743,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				echo '/* ]]> */';
 				echo '</script>';
 
-				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.0', true );
+				wp_enqueue_script( 'coolmediafilter-media-views', plugins_url( 'js/coolmediafilter-media-views.js', __FILE__ ), array( 'media-views' ), '1.0.1', true );
 
 				$cats = $this->cmf_get_accessible_categories();
 
@@ -777,7 +766,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				);
 			}
 
-			wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.0' );
+			wp_enqueue_style( 'coolmediafilter', plugins_url( 'css/coolmediafilter.css', __FILE__ ), array(), '1.0.1' );
 		}
 
 		/**
@@ -1501,7 +1490,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		static function deactivate() {
-
+			echo "Deactivate";
 		}
 
 		/**
@@ -1516,6 +1505,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 	}
 }
 
+$GLOBALS['CoolMediaFilter'] = new CoolMediaFilter();
+
 if ( class_exists( 'CoolMediaFilter' ) ) {
 	$cool_media_filter = new CoolMediaFilter();
 	$cool_media_filter->cmf_register();
@@ -1523,11 +1514,9 @@ if ( class_exists( 'CoolMediaFilter' ) ) {
 
 require_once plugin_dir_path( __FILE__ ) . 'inc/class-coolmediafilter-plugin-actions.php';
 
-// activate
+// activate.
 register_activation_hook( __FILE__, array( 'CoolMediaFilter', 'activate' ) );
-
-// deactivate
+// deactivate.
 register_deactivation_hook( __FILE__, array( 'CoolMediaFilter', 'deactivate' ) );
-
 // uninstall
 register_uninstall_hook( __FILE__, array( 'CoolMediaFilter', 'uninstall' ) );
