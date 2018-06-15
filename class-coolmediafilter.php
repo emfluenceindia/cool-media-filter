@@ -64,9 +64,9 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 
 		/**
 		 * CoolMediaFilter constructor.
+		 * Creates an instance of CoolMediaFilter class.
 		 */
 		public function __construct() {
-			$this->plugin      = plugin_basename( __FILE__ );
 			$this->taxonomy    = 'category';
 			$this->post_type   = 'attachment';
 			$this->text_domain = 'cool-media-filter';
@@ -90,8 +90,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 				add_action( 'admin_footer-upload.php', array( $this, 'cmf_bulk_admin_footer' ) );
 
 				add_action( 'load-upload.php', array( $this, 'cmf_bulk_admin_action' ) );
-
-				add_action( "plugin_action_links_$this->plugin", array( $this, 'cmf_action_links' ) );
 
 				add_action( 'ajax_query_attachments_args', array( $this, 'cmf_ajax_attachment_query_builder' ) );
 				add_action( 'admin_enqueue_scripts', array( $this, 'cmf_enqueue_media_action' ) );
@@ -611,15 +609,6 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 			if ( 'upload.php' === $pagenow && $post_type === $this->post_type && isset( $_GET['editCategory'] ) ) {
 				echo esc_html( '<div class="updated"><p>' . __( 'All changes are saved', 'cool-media-filter' ) . '</p></div>' );
 			}
-		}
-
-		/**
-		 * To be implemented.
-		 *
-		 * @param array $links accepts an array of string values.
-		 */
-		public function cmf_action_links( $links ) {
-			// To be implemented.
 		}
 
 		/**
@@ -1501,7 +1490,7 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 		}
 
 		static function deactivate() {
-
+			echo "Deactivate";
 		}
 
 		/**
@@ -1516,6 +1505,8 @@ if ( ! class_exists( 'CoolMediaFilter' ) ) {
 	}
 }
 
+$GLOBALS['CoolMediaFilter'] = new CoolMediaFilter();
+
 if ( class_exists( 'CoolMediaFilter' ) ) {
 	$cool_media_filter = new CoolMediaFilter();
 	$cool_media_filter->cmf_register();
@@ -1523,11 +1514,9 @@ if ( class_exists( 'CoolMediaFilter' ) ) {
 
 require_once plugin_dir_path( __FILE__ ) . 'inc/class-coolmediafilter-plugin-actions.php';
 
-// activate
+// activate.
 register_activation_hook( __FILE__, array( 'CoolMediaFilter', 'activate' ) );
-
-// deactivate
+// deactivate.
 register_deactivation_hook( __FILE__, array( 'CoolMediaFilter', 'deactivate' ) );
-
 // uninstall
 register_uninstall_hook( __FILE__, array( 'CoolMediaFilter', 'uninstall' ) );
