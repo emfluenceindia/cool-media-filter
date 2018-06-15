@@ -17,7 +17,10 @@ Cool Media Filter lets you
 1.0.0
 
 ## Current Version:
-1.0.0
+1.0.1
+
+## Changelog:
+1.0.1: Fixed Deactivation error.
 
 ## License
 This project is licensed under the MIT License.
